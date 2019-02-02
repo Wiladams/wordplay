@@ -153,6 +153,17 @@ function binstream.readOctet(self)
     return self.data[self.cursor-1]
  end
  
+function binstream.octets(self)
+    return coroutine.wrap(function()
+        while true do
+            c, err = self:readOctet()
+            if not c then
+                return nil;
+            end
+            coroutine.yield(c)
+        end
+    end)
+end
 
 
 -- Read an integer value

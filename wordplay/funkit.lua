@@ -17,7 +17,7 @@ function exports.receive (prod)
     
     table.remove(results, 1)
     
-    return status, results
+    return status, unpack(results)
 end
   
 function exports.send (...)
