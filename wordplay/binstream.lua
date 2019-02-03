@@ -44,8 +44,8 @@ function binstream.init(self, data, size, position, littleendian)
     local obj = {
         bigend = not littleendian;
         data = ffi.cast("uint8_t *", data);
-        size = size;
-        cursor = position;
+        size = tonumber(size);
+        cursor = tonumber(position);
     }
  
     setmetatable(obj, binstream_mt)
@@ -79,7 +79,8 @@ end
 -- report how many bytes remain to be read
 -- from stream
 function binstream.remaining(self)
-    return tonumber(self.size - self.cursor)
+    --return tonumber(self.size - self.cursor)
+    return self.size - self.cursor
 end
 
 function binstream.EOF(self)
@@ -111,8 +112,7 @@ end
 -- specified in the offset
 -- seek, relative to current position
 function binstream.skip(self, offset)
-    --print("SKIP: ", offset)
-     return self:seek(self.cursor + offset);
+    return self:seek(self.cursor + offset);
 end
 
 -- Seek forward to an even numbered byte boundary
@@ -143,7 +143,7 @@ end
 
 -- get 8 bits, and advance the cursor
 function binstream.readOctet(self)
-    --print("self.cursor: ", self.cursor, self.size)
+    -- check to ensure we don't go beyond end
     if (self.cursor >= self.size) then
        return false, "EOF";
     end
