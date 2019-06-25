@@ -4,6 +4,9 @@ package.path = "../?.lua;"..package.path
     References
     http://craftinginterpreters.com/
 
+    lox language scanner
+    http://craftinginterpreters.com/scanning.html
+
     Implementing the lox language lexer
 --]]
 
