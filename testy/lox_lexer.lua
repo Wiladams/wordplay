@@ -41,10 +41,29 @@ enum TokenType {
 };
 ]]
 
+local keywords = {
+    ["and"]     = C.AND;
+    ["class"]   = C.CLASS;
+    ["else"]    = C.ELSE;
+    ["false"]   = C.FALSE;
+    ["for"]     = C.FOR;
+    ["fun"]     = C.FUN;
+    ["if"]      = C.IF;
+    ["nil"]     = C.NIL;
+    ["or"]      = C.OR;
+    ["print"]   = C.PRINT;
+    ["return"]  = C.RETURN;
+    ["super"]   = C.SUPER;
+    ["this"]    = C.THIS;
+    ["true"]    = C.TRUE;
+    ["var"]     = C.VAR;
+    ["while"]   = C.WHILE;
+}
+
 local B = string.byte
 
-local T_LPAREN = B'(';
-local T_RPAREN = B')';
+
+
 local T_LBRACE = string.byte('{')
 local T_RBRACE = string.byte('}')
 local T_COMMA = string.byte(',')
@@ -55,7 +74,7 @@ local T_SEMICOLON = string.byte(';')
 local T_SLASH = string.byte('/')
 local T_STAR = string.byte('*')
 local T_BANG = string.byte('!')
-local T_EQUAL = B'='
+
 
 
 local function isDigit(c)
@@ -103,11 +122,11 @@ end
 
 local lexemeMap = {}
 
-lexemeMap[T_LPAREN] = function(bs)
+lexemeMap[B'('] = function(bs)
     coroutine.yield (Token{Kind = C.LEFT_PAREN, lexeme='(', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_RPAREN] = function(bs) 
+lexemeMap[B')'] = function(bs) 
     coroutine.yield (Token{Kind = C.RIGHT_PAREN, lexeme=')', literal='', line=bs:getLine()}); 
 end
 
@@ -144,7 +163,7 @@ lexemeMap[T_STAR] = function(bs)
 end
 
 lexemeMap[B'!'] = function(bs) 
-    if match(bs, T_EQUAL) then 
+    if match(bs, B'=') then 
         coroutine.yield (Token{Kind = C.BANG_EQUAL, lexeme='!=', literal='', line=bs:getLine()});
     else
         coroutine.yield (Token{Kind = C.BANG, lexeme='!', literal='', line=bs:getLine()});
@@ -152,7 +171,7 @@ lexemeMap[B'!'] = function(bs)
 end
 
 lexemeMap[B'='] = function(bs) 
-    if match(bs, T_EQUAL) then 
+    if match(bs, B'=') then 
         coroutine.yield (Token{Kind = C.EQUAL_EQUAL, lexeme='==', literal='', line=bs:getLine()});
     else
         coroutine.yield (Token{Kind = C.EQUAL, lexeme='=', literal='', line=bs:getLine()});
@@ -168,7 +187,7 @@ lexemeMap[B'<'] = function(bs)
 end
 
 lexemeMap[B'>'] = function(bs) 
-    if match(bs, T_EQUAL) then 
+    if match(bs, B'=') then 
         coroutine.yield (Token{Kind = C.GREATER_EQUAL, lexeme='>=', literal='', line=bs:getLine()});
     else
         coroutine.yield (Token{Kind = C.GREATER, lexeme='>', literal='', line=bs:getLine()});
@@ -275,8 +294,14 @@ local function lex_identifier(bs)
     local len = ending - starting;
     local value = ffi.string(startPtr, len)
 
+    -- See if the identifier is a reserved word
+    local kind = keywords[value]
+    if not kind then
+        kind = C.IDENTIFIER
+    end
+
     -- return the identifier
-    coroutine.yield (Token{Kind = C.IDENTIFIER, lexeme=value, literal='', line=bs:getLine()})
+    coroutine.yield (Token{Kind = kind, lexeme=value, literal='', line=bs:getLine()})
 end
 
 

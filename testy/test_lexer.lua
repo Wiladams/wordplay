@@ -40,7 +40,12 @@ end
 local function test_identifier()
 local text = [[
 ID = 1;
-who is this
+c=  "hello, world!"
+fun myFunc() {
+    while a < 23 {
+        b = 23.4
+    }
+}
 ]]
     for lexeme in lexer(text) do
         print(lexeme)
