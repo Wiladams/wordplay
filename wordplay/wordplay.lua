@@ -15,15 +15,27 @@ local exports = {}
 
 --[[
     iterator utilities
-
+    https://www.lua.org/pil/9.2.html
 ]]
-function send (...)
+local function send (...)
     coroutine.yield(...)
 end
 
+
+local function receive (prod)
+    --print("receive, pulling")
+    local status, value = coroutine.resume(prod)
+
+    --print("receive, status: ", status)
+    if not status then 
+        return nil 
+    end
+    
+    return value
+end
 --[[
     iterator parts
-]]
+--]]
 --[[
     simple iterator that takes the items coming
     from the input iterator, applies an operation

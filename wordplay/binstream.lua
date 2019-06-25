@@ -46,6 +46,7 @@ function binstream.init(self, data, size, position, littleendian)
         data = ffi.cast("uint8_t *", data);
         size = tonumber(size);
         cursor = tonumber(position);
+        lineCount = 1;
     }
  
     setmetatable(obj, binstream_mt)
@@ -87,6 +88,16 @@ function binstream.EOF(self)
     return self:remaining() < 1
 end
 
+function binstream.getLine(self)
+    return self.lineCount;
+end
+
+function binstream.incrementLineCount(self, n)
+    n = n or 1;
+    self.lineCount = self.lineCount + n;
+end
+
+
  -- move to a particular position, in bytes
 function binstream.seek(self, pos)
     -- if position specified outside of range
@@ -107,13 +118,18 @@ function binstream.tell(self)
     return self.cursor;
 end
 
+binstream.getPosition = binstream.tell;
+
 
 -- move the cursor ahead by the amount
 -- specified in the offset
 -- seek, relative to current position
 function binstream.skip(self, offset)
+    offset = offset or 1;
     return self:seek(self.cursor + offset);
 end
+
+
 
 -- Seek forward to an even numbered byte boundary
 -- This could be expanded to seek to next highest
@@ -131,12 +147,13 @@ function binstream.getPositionPointer(self)
 end
 
 -- get 8 bits, and don't advance the cursor
-function binstream.peekOctet(self)
-    if (self.cursor >= self.size) then
+function binstream.peekOctet(self, offset)
+    offset = offset or 0
+    if (self.cursor+offset >= self.size) then
         return false;
     end
 
-    return self.data[self.cursor];
+    return self.data[self.cursor+offset];
 end
 
 
