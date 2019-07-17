@@ -1,6 +1,27 @@
 package.path = "../?.lua;"..package.path
 
 --[[
+    This single file is the lexer for the toy 'lox' 
+    language.  The file returns a single iterator which
+    can be used to scan an input, and return a stream 
+    of tokens, which can be used by other processes.
+
+    Typical usage:
+
+    local lexemes = require("lox_lexer")
+    for token in lexemes("var a = 123.45;") do
+        print(token)
+    end
+
+
+    Note:
+    This scanner is done as an iterator so that it can 
+    be easily composed with other tools in a pipeline.  This
+    opens up a possibility where various kinds of tools
+    can be put together quickly by simply throwing together
+    various iterators.  For example, I want lox language
+    tokens, but I want to generate lua tables in a backend.
+    
     References
     http://craftinginterpreters.com/
 
@@ -66,20 +87,7 @@ local keywords = {
 local B = string.byte
 
 
-
-local T_LBRACE = string.byte('{')
-local T_RBRACE = string.byte('}')
-local T_COMMA = string.byte(',')
-local T_DOT = string.byte('.')
-local T_MINUS = string.byte('-')
-local T_PLUS = string.byte('+')
-local T_SEMICOLON = string.byte(';')
-local T_SLASH = string.byte('/')
-local T_STAR = string.byte('*')
-local T_BANG = string.byte('!')
-
-
-
+-- Character categories
 local function isDigit(c)
     return c >= B'0' and c <= B'9';
 end
@@ -94,18 +102,20 @@ local function isAlphaNumeric(c)
     return isAlpha(c) or isDigit(c)
 end
 
+-- helper function
+-- if the next character in the stream matches
+-- what is expected, then consume it and return true
+-- otherwise, don't consume it, and return false.
 local function match(bs, expected)
     if bs:EOF() then
         return false;
     end
 
-    --print("peek: ", bs:peekOctet(), expected )
     if bs:peekOctet() ~= expected then
-
         return false;
     end
 
-    -- advance by one
+    -- advance by one octet
     bs:skip(1)
 
     return true;
@@ -122,7 +132,10 @@ local function Token(obj)
     return obj;
 end
 
-
+-- The lexemeMap gives us a table that represents the start of a 
+-- lexeme, and what action should be taken to deal with it.
+-- each entry is a function that performs the necessary, typically
+-- generating a token to be consumed by whomever is scanning.
 local lexemeMap = {}
 
 lexemeMap[B'('] = function(bs)
@@ -133,35 +146,35 @@ lexemeMap[B')'] = function(bs)
     coroutine.yield (Token{Kind = C.RIGHT_PAREN, lexeme=')', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_LBRACE] = function(bs) 
+lexemeMap[B'{'] = function(bs) 
     coroutine.yield (Token{Kind = C.LEFT_BRACE, lexeme='{', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_RBRACE] = function(bs) 
+lexemeMap[B'}'] = function(bs) 
     coroutine.yield (Token{Kind = C.RIGHT_BRACE, lexeme='}', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_COMMA] = function(bs) 
+lexemeMap[B','] = function(bs) 
     coroutine.yield (Token{Kind = C.COMMA, lexeme=',', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_DOT] = function(bs) 
+lexemeMap[B'.'] = function(bs) 
     coroutine.yield (Token{Kind = C.DOT, lexeme='.', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_MINUS] = function(bs) 
+lexemeMap[B'-'] = function(bs) 
     coroutine.yield (Token{Kind = C.MINUS, lexeme='-', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_PLUS] = function(bs) 
+lexemeMap[B'+'] = function(bs) 
     coroutine.yield (Token{Kind = C.PLUS, lexeme='+', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_SEMICOLON] = function(bs) 
+lexemeMap[B';'] = function(bs) 
     coroutine.yield (Token{Kind = C.SEMICOLON, lexeme=';', literal='', line=bs:getLine()}); 
 end
 
-lexemeMap[T_STAR] = function(bs) 
+lexemeMap[B'*'] = function(bs) 
     coroutine.yield (Token{Kind = C.STAR, lexeme='*', literal='', line=bs:getLine()}); 
 end
 
@@ -317,7 +330,15 @@ local function lexemes(str)
             local c = bs:readOctet()
             --print(string.char(c))
             if lexemeMap[c] then
-                lexemeMap[c](bs)
+                local result, err = lexemeMap[c](bs)
+                if result then
+                    -- BUGBUG
+                    -- when routines only return a token
+                    -- uncomment the following
+                    --coroutine.yield(result)
+                else
+                    -- deal with error if there was one
+                end
             else
                 if isDigit(c) then
                     lex_number(bs)
