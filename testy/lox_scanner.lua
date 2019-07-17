@@ -1,5 +1,7 @@
 package.path = "../?.lua;"..package.path
 
+-- SAME as lox_lexer, but trying some new things
+
 --[[
     This single file is the lexer for the toy 'lox' 
     language.  The file returns a single iterator which
@@ -36,71 +38,69 @@ local C = ffi.C
 local B = string.byte
 
 local binstream = require("wordplay.binstream")
+local enum = require("wordplay.enum")
+local cctype = require("wordplay.cctype")
+local isDigit = cctype.isdigit
+local isAlpha = cctype.isalpha
+local isAlphaNumeric = cctype.isalnum
 
-ffi.cdef[[
-enum TokenType {                                   
-        // Single-character tokens.                      
-        LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
-        COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, STAR, 
+
+local TokenType = enum {                                   
+        -- Single-character tokens.                      
+        [0] = "LEFT_PAREN", 
+        "RIGHT_PAREN", 
+        "LEFT_BRACE", 
+        "RIGHT_BRACE",
+        "COMMA", 
+        "DOT", 
+        "MINUS", 
+        "PLUS", 
+        "SEMICOLON", 
+        "SLASH", 
+        "STAR", 
       
-        // One or two character tokens.                  
-        // [11]
-        BANG, BANG_EQUAL,                                
-        EQUAL, EQUAL_EQUAL,                              
-        GREATER, GREATER_EQUAL,                          
-        LESS, LESS_EQUAL,                                
+        -- One or two character tokens.                  
+        -- [11]
+        "BANG", 
+        "BANG_EQUAL",                                
+        "EQUAL", 
+        "EQUAL_EQUAL",                              
+        "GREATER", 
+        "GREATER_EQUAL",                          
+        "LESS", 
+        "LESS_EQUAL",                                
       
-        // Literals.                                     
-        // [19]
-        IDENTIFIER, 
-        STRING, 
-        NUMBER,                      
+        -- Literals.                                     
+        -- [19]
+        "IDENTIFIER", 
+        "STRING", 
+        "NUMBER",                      
       
-        // Keywords.                                     
-        //  [22]
-        AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,  
-        PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,    
+        -- Keywords.                                     
+        --  [22]
+        "and", 
+        "class", 
+        "else", 
+        "false", 
+        "fun", 
+        "for", 
+        "if", 
+        "nil", 
+        "or",  
+        "print", 
+        "return", 
+        "super", 
+        "this", 
+        "true", 
+        "var", 
+        "while",    
       
-        // [38]
-        EOF                                              
+        -- [38]
+        "EOF"                                              
 };
-]]
-
-local keywords = {
-    ["and"]     = C.AND;
-    ["class"]   = C.CLASS;
-    ["else"]    = C.ELSE;
-    ["false"]   = C.FALSE;
-    ["for"]     = C.FOR;
-    ["fun"]     = C.FUN;
-    ["if"]      = C.IF;
-    ["nil"]     = C.NIL;
-    ["or"]      = C.OR;
-    ["print"]   = C.PRINT;
-    ["return"]  = C.RETURN;
-    ["super"]   = C.SUPER;
-    ["this"]    = C.THIS;
-    ["true"]    = C.TRUE;
-    ["var"]     = C.VAR;
-    ["while"]   = C.WHILE;
-}
 
 
 
--- Character categories
-local function isDigit(c)
-    return c >= B'0' and c <= B'9';
-end
-
-local function isAlpha(c)
-    return c >= B'a' and c <= B'z' or
-        c >= B'A' and c <= B'Z' or
-        c == B'_';
-end
-
-local function isAlphaNumeric(c)
-    return isAlpha(c) or isDigit(c)
-end
 
 -- helper function
 -- if the next character in the stream matches
@@ -139,74 +139,74 @@ end
 local lexemeMap = {}
 
 lexemeMap[B'('] = function(bs)
-    coroutine.yield (Token{Kind = C.LEFT_PAREN, lexeme='(', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.LEFT_PAREN, lexeme='(', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B')'] = function(bs) 
-    coroutine.yield (Token{Kind = C.RIGHT_PAREN, lexeme=')', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.RIGHT_PAREN, lexeme=')', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B'{'] = function(bs) 
-    coroutine.yield (Token{Kind = C.LEFT_BRACE, lexeme='{', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.LEFT_BRACE, lexeme='{', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B'}'] = function(bs) 
-    coroutine.yield (Token{Kind = C.RIGHT_BRACE, lexeme='}', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.RIGHT_BRACE, lexeme='}', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B','] = function(bs) 
-    coroutine.yield (Token{Kind = C.COMMA, lexeme=',', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.COMMA, lexeme=',', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B'.'] = function(bs) 
-    coroutine.yield (Token{Kind = C.DOT, lexeme='.', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.DOT, lexeme='.', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B'-'] = function(bs) 
-    coroutine.yield (Token{Kind = C.MINUS, lexeme='-', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.MINUS, lexeme='-', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B'+'] = function(bs) 
-    coroutine.yield (Token{Kind = C.PLUS, lexeme='+', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.PLUS, lexeme='+', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B';'] = function(bs) 
-    coroutine.yield (Token{Kind = C.SEMICOLON, lexeme=';', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.SEMICOLON, lexeme=';', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B'*'] = function(bs) 
-    coroutine.yield (Token{Kind = C.STAR, lexeme='*', literal='', line=bs:getLine()}); 
+    return (Token{Kind = TokenType.STAR, lexeme='*', literal='', line=bs:getLine()}); 
 end
 
 lexemeMap[B'!'] = function(bs) 
     if match(bs, B'=') then 
-        coroutine.yield (Token{Kind = C.BANG_EQUAL, lexeme='!=', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.BANG_EQUAL, lexeme='!=', literal='', line=bs:getLine()});
     else
-        coroutine.yield (Token{Kind = C.BANG, lexeme='!', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.BANG, lexeme='!', literal='', line=bs:getLine()});
     end
 end
 
 lexemeMap[B'='] = function(bs) 
     if match(bs, B'=') then 
-        coroutine.yield (Token{Kind = C.EQUAL_EQUAL, lexeme='==', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.EQUAL_EQUAL, lexeme='==', literal='', line=bs:getLine()});
     else
-        coroutine.yield (Token{Kind = C.EQUAL, lexeme='=', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.EQUAL, lexeme='=', literal='', line=bs:getLine()});
     end
 end
 
 lexemeMap[B'<'] = function(bs) 
     if match(bs, B'=') then 
-        coroutine.yield (Token{Kind = C.LESS_EQUAL, lexeme='<=', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.LESS_EQUAL, lexeme='<=', literal='', line=bs:getLine()});
     else
-        coroutine.yield (Token{Kind = C.LESS, lexeme='<', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.LESS, lexeme='<', literal='', line=bs:getLine()});
     end
 end
 
 lexemeMap[B'>'] = function(bs) 
     if match(bs, B'=') then 
-        coroutine.yield (Token{Kind = C.GREATER_EQUAL, lexeme='>=', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.GREATER_EQUAL, lexeme='>=', literal='', line=bs:getLine()});
     else
-        coroutine.yield (Token{Kind = C.GREATER, lexeme='>', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.GREATER, lexeme='>', literal='', line=bs:getLine()});
     end
 end
 
@@ -218,7 +218,7 @@ lexemeMap[B'/'] = function(bs)
             bs:skip(1)
         end
     else
-        coroutine.yield (Token{Kind = C.SLASH, lexeme='/', literal='', line=bs:getLine()});
+        return (Token{Kind = TokenType.SLASH, lexeme='/', literal='', line=bs:getLine()});
     end
 end
 
@@ -263,7 +263,7 @@ lexemeMap[B'"'] = function(bs)
     local value = ffi.string(startPtr, len)
 
     -- return the string literal
-    coroutine.yield (Token{Kind = C.STRING, lexeme='', literal=value, line=bs:getLine()})
+    return (Token{Kind = TokenType.STRING, lexeme='', literal=value, line=bs:getLine()})
 end
 
 local function lex_number(bs)
@@ -292,11 +292,12 @@ local function lex_number(bs)
     local value = tonumber(ffi.string(startPtr, len))
     
     -- return the number literal
-    coroutine.yield (Token{Kind = C.NUMBER, lexeme='', literal=value, line=bs:getLine()})
+    return (Token{Kind = TokenType.NUMBER, lexeme='', literal=value, line=bs:getLine()})
 
 end
 
 local function lex_identifier(bs)
+    --print("lex_identifier")
     -- start back at first digit
     bs:skip(-1)
     local starting = bs:tell();
@@ -309,15 +310,17 @@ local function lex_identifier(bs)
     local ending = bs:tell();
     local len = ending - starting;
     local value = ffi.string(startPtr, len)
-
+--print("value: ", value)
     -- See if the identifier is a reserved word
-    local kind = keywords[value]
+    local kind = TokenType[value]
     if not kind then
-        kind = C.IDENTIFIER
+        kind = TokenType.IDENTIFIER
     end
 
     -- return the identifier
-    coroutine.yield (Token{Kind = kind, lexeme=value, literal='', line=bs:getLine()})
+    local tok =  Token{Kind = kind, lexeme=value, literal='', line=bs:getLine()}
+--print("lex_identifier: ", tok.kind, tok.lexeme, tok.literal, tok.line)
+    return tok
 end
 
 
@@ -335,15 +338,17 @@ local function lexemes(str)
                     -- BUGBUG
                     -- when routines only return a token
                     -- uncomment the following
-                    --coroutine.yield(result)
+                    coroutine.yield(result)
                 else
                     -- deal with error if there was one
                 end
             else
                 if isDigit(c) then
-                    lex_number(bs)
+                    coroutine.yield(lex_number(bs))
                 elseif isAlpha(c) then
-                    lex_identifier(bs)
+                    local tok = lex_identifier(bs)
+                    --print(tok)
+                    coroutine.yield(tok)
                 else
                     print("UNKNOWN: ", string.char(c)) 
                 end

@@ -4,7 +4,8 @@
 --]]
 
 local ffi = require("ffi")
-local lexer = require("lox_lexer")
+--local lexer = require("lox_lexer")
+local lexer = require("lox_scanner")
 
 local lexInput1 = [[
 // this is a comment

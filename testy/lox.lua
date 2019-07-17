@@ -1,5 +1,6 @@
 
-local scanner = require("lox_lexer")
+--local scanner = require("lox_lexer")
+local scanner = require("lox_scanner")
 
 local function run(str)
     for lexeme in scanner(str) do

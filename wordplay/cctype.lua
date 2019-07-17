@@ -25,11 +25,15 @@ local t_9 = string.byte('9')
 
 
 local function isalpha(c)
+	if not c then return false end
+
 	return (c >= t_a and c <= t_z) or
 		(c >= t_A and c <= t_Z)
 end
 
 local function isdigit(c)
+	if not c then return false end
+
 	return c >= t_0 and c <= t_9
 end
 
@@ -40,33 +44,47 @@ end
 
 
 local function isascii(c)
+	if not c then return false end
+
 	return (c >= 0) and (c <= 0x7f)
 end
 
 local function isbyte(n)
+	if not c then return false end
+
 	return band(n,0xff) == n
 end
 
 local function iscntrl(c)
+	if not c then return false end
+
 	return (c >= 0 and c < 0x20) or (c == 0x7f)
 end
 
 
 
 local function isgraph(c)
+	if not c then return false end
+
 	return c > 0x20 and c < 0x7f
 end
 
 local function islower(c)
+	if not c then return false end
+
 	return c>=t_a and c<=t_z;
 end
 
 local function isprint(c)
+	if not c then return false end
+
 	return c >= 0x20 and c < 0x7f
 end
 
 
 local function ispunct(c)
+	if not c then return false end
+
 	return isgraph(c) and not isalnum(c)
 --[[
 	return (c>=0x21 and c<=0x2f) or
@@ -78,14 +96,20 @@ end
 
 -- ' ' 0x20, '\t' 0x09, '\n' 0x0a, '\v' 0x0b, '\f' 0x0c, '\r' 0x0d
 local function isspace(c)
+	if not c then return false end
+
 	return c == 0x20 or (c >= 0x09 and c<=0x0d)
 end
 
 local function isupper(c)
+	if not c then return false end
+
 	return c >= t_A and c <= t_Z;
 end
 
 local function isxdigit(c)
+	if not c then return false end
+
 	if isdigit(c) then return true end
 
 	return (c >= t_a and c <= t_f) or
@@ -93,6 +117,8 @@ local function isxdigit(c)
 end
 
 local function tolower(c)
+	if not c then return false end
+
 	return band(0xff,bor(c, 0x20))
 end
 
