@@ -1,0 +1,280 @@
+--[[
+    This file is a general memory stream interface.
+    The primary objective is to satisfy the needs of the 
+    truetype parser, but it can be used in general cases.
+
+    It differs from the MemoryStream object in that it can't
+    write, and it has more specific data type reading 
+    convenience calls.
+
+    More specifically, all of the numeric reading assumes the
+    data in the stream is formatted in 'big-endian' order.  That
+    is, the high order bytes come first.
+]]
+local ffi = require("ffi")
+local bit = require("bit")
+local bor, lshift = bit.bor, bit.lshift
+local min = math.min
+
+--[[
+    Standard 'object' construct.
+    __call is implemented so we get a 'constructor'
+    sort of feel:
+    octetstream(data, size, position)
+]]
+local octetstream = {
+    EOF = -1
+}
+setmetatable(octetstream, {
+		__call = function(self, ...)
+		return self:new(...)
+	end,
+})
+
+local octetstream_mt = {
+	__index = octetstream;
+}
+
+
+function octetstream.init(self, data, size, position)
+    position = position or 0
+    size = size or #data
+
+    local obj = {
+        data = ffi.cast("uint8_t *", data);
+        size = tonumber(size);
+        cursor = tonumber(position);
+    }
+ 
+    setmetatable(obj, octetstream_mt)
+    return obj
+end
+
+function octetstream.new(self, data, size, position)
+    return self:init(data, size, position);
+end
+
+-- get a subrange of the stream
+-- this is an alias to the data
+-- not a copy
+function octetstream.range(self, size, pos)
+    pos = pos or self.cursor;
+
+    if pos < 0 or size < 0 then
+        return false, "pos or size < 0"
+    end
+
+    if pos > self.size then
+        return false, "pos > self.size"
+    end
+
+    if ((size > (self.size - pos))) then 
+        return false, "size is greater than remainder";
+    end
+
+    return octetstream(self.data+pos, size, 0)
+end
+
+-- report how many bytes remain to be read
+-- from stream
+function octetstream.remaining(self)
+    return self.size - self.cursor
+end
+
+function octetstream.isEOF(self)
+    return self:remaining() < 1
+end
+
+--[[
+    seekFromBeginning(self, pos)
+
+    pos - an absolute position number
+        if you specify < 0, it will be set to 0
+            remaining() will be whatever the length of
+            the data is
+        if you specify > size, it will be set to size
+            isEOF() will return true
+            remaining() will return 0
+ --]]
+function octetstream.seekFromBeginning(self, pos)
+    if not pos then return self end
+
+    if pos < 0 then pos = 0 end
+    if pos > self.size then pos = self.size end
+
+    self.cursor = pos;
+ 
+    return self;
+end
+
+--[[
+    seekFromCurrent(self, size)
+
+    Move the cursor by the specified amount.
+    Usually you skip in a positive direction, but
+    you can actually move in either direction.
+    if size < 0, move towards beginning of stream
+    if size > 1, move towards end of stream
+
+    This is essentially a seek() relative to current
+    position, rather than to an absolute position
+]]
+
+function octetstream.seekFromCurrent(self, size)
+    size = size or 1;
+    return self:seekFromBeginning(self.cursor + size);
+end
+
+function octetstream.seekFromEnd(self, size)
+    return self:seekFromBeginning(self.size - size)
+end
+
+--[[
+    tell(self)
+
+    Return the current position within the stream.
+]]
+function octetstream.tell(self)
+    return self.cursor;
+end
+
+
+function octetstream.getPositionPointer(self)
+    return self.data + self.cursor;
+end
+
+-- get 8 bits, and don't advance the cursor
+function octetstream.peekOctet(self, offset)
+    offset = offset or 0
+    if (self.cursor+offset >= self.size) then
+        return -1;
+    end
+
+    return self.data[self.cursor+offset];
+end
+
+
+
+-- get 8 bits, and advance the cursor
+function octetstream.readOctet(self)
+    -- check to ensure we don't go beyond end
+    if (self.cursor >= self.size) then
+       return false, "EOF";
+    end
+
+    self.cursor = self.cursor + 1;
+    
+    return self.data[self.cursor-1]
+ end
+ 
+
+
+
+-- BUGBUG, do error checking against end of stream
+function octetstream.readBytes(self, size, bytes)
+    if size < 1 then 
+        return 0, "must specify a size > 0 octets" 
+    end
+
+    if self:isEOF() then
+        return -1;
+    end
+
+    -- calculate how many bytes we can actually 
+    -- read, based on what's remaining
+    local sizeActual = min(size, self:remaining())
+
+    -- read the minimum between remaining and 'n'
+    bytes = bytes or ffi.new("uint8_t[?]", sizeActual)
+    ffi.copy(bytes, self.data+self.cursor, sizeActual)
+    self:skip(sizeActual)
+
+    return bytes, nActual;
+end
+
+
+--[[
+    writeOctet(self, octet)
+
+    octet - the single parameter to be written
+--]]
+function octetstream.writeOctet(self, octet)
+    if self:remaining() < 1 then
+        return -1;
+    end
+
+    self.data[self.cursor] = octet;
+    self.cursor = self.cursor + 1;
+
+    return 1;
+end
+
+function octetstream.writeOctetStream(self, stream)
+    for _, c in stream:enumOctets() do
+        -- we should bail early if we can't write
+        -- the full stream
+        self:writeOctet(c)
+    end
+end
+
+--[[
+-- Need to think about proper semantics here
+function octetstream.writeOctets(self, octets, size, allowTruncate)
+    if not octets then
+        return false, "no octets specified"
+    end
+
+    size = size or #bytes
+    if size > self:remaining() then 
+        return false, "Not enough space"
+    end
+
+    ffi.copy(self.data+self.cursor, ffi.cast("const char *", bytes, n))
+    self:skip(n)
+
+    return true;
+end
+
+
+function octetstream.writeString(self, str)
+    return self:writeBytes(str)
+end
+--]]
+
+
+--[[
+    enumOctets(self)
+
+    Return an iterator over all the octets in the stream.
+
+    Parameters: -none-
+    
+    Return: an iterator similar to ipairs (gen, param, state)
+
+    Usage:
+
+    local os = octetstream("Hello, Stream")
+    for _, c in os:enumOctets() do
+        print(c, string.char(c))
+    end
+]]
+function octetstream.enumOctets(self)
+    -- The function that generates individual
+    -- octets, returning 'nil' when done
+    local function octetgen(bs, state)
+        if bs:isEOF() then
+            return nil;
+        end
+
+        return state+1, bs:readOctet();
+    end
+
+    -- we use a full range of ourself as the 
+    -- parameters for enumeration.
+    -- makes for a really easy generator
+    return octetgen, self:range(self.size, 0), 0
+end
+
+
+
+return octetstream

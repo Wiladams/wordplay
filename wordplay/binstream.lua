@@ -150,7 +150,7 @@ end
 function binstream.peekOctet(self, offset)
     offset = offset or 0
     if (self.cursor+offset >= self.size) then
-        return false;
+        return -1;
     end
 
     return self.data[self.cursor+offset];
@@ -198,7 +198,8 @@ function binstream.read(self, n)
 
     if self.bigend then
         while  (i < n) do
-            v = bor(lshift(v, 8), self:readOctet());
+            local octet = self:readOctet()
+            v = bor(lshift(v, 8), octet);
             i = i + 1;
         end 
     else
