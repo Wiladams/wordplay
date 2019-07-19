@@ -210,10 +210,11 @@ lexemeMap[B'>'] = function(bs)
     end
 end
 
+-- processing a comment, consume til end of line or EOF
+-- totally throw away comment
+
 lexemeMap[B'/'] = function(bs)
     if match(bs, B'/') then 
-        -- processing a comment, consume til end of line or EOF
-        -- totally throw away comment
         while bs:peekOctet() ~= B'\n' and not bs:EOF() do
             bs:skip(1)
         end

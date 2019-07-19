@@ -124,6 +124,7 @@ function octetstream.seekFromCurrent(self, size)
     size = size or 1;
     return self:seekFromBeginning(self.cursor + size);
 end
+octetstream.skip = octetstream.seekFromCurrent
 
 function octetstream.seekFromEnd(self, size)
     return self:seekFromBeginning(self.size - size)

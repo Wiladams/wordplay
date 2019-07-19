@@ -10,31 +10,16 @@ local bit = require "bit"
 local band = bit.band
 local bor = bit.bor
 
-
-
-
-local t_a = string.byte('a')
-local t_f = string.byte('f')
-local t_z = string.byte('z')
-local t_A = string.byte('A')
-local t_F = string.byte('F')
-local t_Z = string.byte('Z')
-local t_0 = string.byte('0')
-local t_9 = string.byte('9')
-
+local B = string.byte
 
 
 local function isalpha(c)
-	if not c then return false end
-
-	return (c >= t_a and c <= t_z) or
-		(c >= t_A and c <= t_Z)
+	return (c >= B'a' and c <= B'z') or
+		(c >= B'A' and c <= B'Z')
 end
 
 local function isdigit(c)
-	if not c then return false end
-
-	return c >= t_0 and c <= t_9
+	return c >= B'0' and c <= B'9'
 end
 
 local function isalnum(c)
@@ -44,47 +29,35 @@ end
 
 
 local function isascii(c)
-	if not c then return false end
-
 	return (c >= 0) and (c <= 0x7f)
 end
 
 local function isbyte(n)
-	if not c then return false end
-
 	return band(n,0xff) == n
 end
 
+-- 0x00 0x20	control, space
+-- x7f	Del
 local function iscntrl(c)
-	if not c then return false end
-
 	return (c >= 0 and c < 0x20) or (c == 0x7f)
 end
 
 
 
 local function isgraph(c)
-	if not c then return false end
-
 	return c > 0x20 and c < 0x7f
 end
 
 local function islower(c)
-	if not c then return false end
-
-	return c>=t_a and c<=t_z;
+	return c >= B'a' and c <= B'z';
 end
 
 local function isprint(c)
-	if not c then return false end
-
 	return c >= 0x20 and c < 0x7f
 end
 
 
 local function ispunct(c)
-	if not c then return false end
-
 	return isgraph(c) and not isalnum(c)
 --[[
 	return (c>=0x21 and c<=0x2f) or
@@ -94,31 +67,28 @@ local function ispunct(c)
 --]]
 end
 
--- ' ' 0x20, '\t' 0x09, '\n' 0x0a, '\v' 0x0b, '\f' 0x0c, '\r' 0x0d
+-- ' ' 0x20, 
+-- '\t' 0x09, 
+-- '\n' 0x0a, 
+-- '\v' 0x0b, 
+-- '\f' 0x0c, 
+-- '\r' 0x0d
 local function isspace(c)
-	if not c then return false end
-
 	return c == 0x20 or (c >= 0x09 and c<=0x0d)
 end
 
 local function isupper(c)
-	if not c then return false end
-
-	return c >= t_A and c <= t_Z;
+	return c >= B'A' and c <= B'Z';
 end
 
 local function isxdigit(c)
-	if not c then return false end
-
 	if isdigit(c) then return true end
 
-	return (c >= t_a and c <= t_f) or
-		(c >= t_A and c <= t_F)
+	return (c >= B'a' and c <= B'f') or
+		(c >= B'A' and c <= B'F')
 end
 
 local function tolower(c)
-	if not c then return false end
-
 	return band(0xff,bor(c, 0x20))
 end
 
