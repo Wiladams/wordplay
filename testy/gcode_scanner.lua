@@ -20,6 +20,7 @@ local TokenType = enum {
     "LEFT_BRACKET", 
     "RIGHT_BRACKET",
     
+    [10] =
     "COLON",
     "COMMA", 
     "DOT", 
@@ -33,6 +34,7 @@ local TokenType = enum {
 
     -- One or two character tokens.
     -- [11]
+    [30] = 
     "BANG", 
     "BANG_EQUAL",                                
     "EQUAL", 
@@ -44,6 +46,7 @@ local TokenType = enum {
 
     -- Literals.                                     
     -- [19]
+    [40] =
     "COMMENT",
     "IDENTIFIER", 
     "STRING", 
@@ -164,8 +167,7 @@ local function lex_identifier(bs)
     return tok
 end
 
-local function lexemes(str)
-    local bs = octetstream(str, #str)
+local function lexemes(bs)
 
     local function iter()
 

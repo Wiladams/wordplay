@@ -1,20 +1,36 @@
 
 --local scanner = require("lox_lexer")
 local scanner = require("gcode_scanner")
+local octetstream = require("wordplay.octetstream")
+local mmap = require("mmap")
 
-local function run(str)
-    for lexeme in scanner(str) do
+
+local function run(bs)
+    for lexeme in scanner(bs) do
+        -- if we want to convert comments to parenthesized
+        -- ones
+        --[[
+        if lexeme.Kind == 40  then  -- comment
+            print(string.format("(%s)",lexeme.lexeme))
+        end
+        --]]
+        
         print(lexeme)
     end
 end
 
 local function runFile(filename)
+    local m = mmap(filename)
+    local ptr = m:getPointer()
+
+    local bs = octetstream(ptr, #m)
+    run(bs)
 end
 
 local function runPrompt()
     while true do
         io.write("> ")
-        run(io.read("*l"))
+        run(octetstream(io.read("*l")))
     end
 end
 
