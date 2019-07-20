@@ -1,48 +1,56 @@
+local enum = require("wordplay.enum")
 
---local scanner = require("lox_lexer")
-local scanner = require("gcode_scanner")
-local octetstream = require("wordplay.octetstream")
-local mmap = require("mmap")
+local TokenType = enum {                                   
+    -- Single-character tokens.                      
+    [0] = "LEFT_PAREN", 
+    "RIGHT_PAREN", 
+    "LEFT_BRACKET", 
+    "RIGHT_BRACKET",
+    
+    [10] =
+    "COLON",
+    "COMMA", 
+    "DOT", 
+    "MINUS", 
+    "PERCENT",
+    "POUND",
+    "PLUS", 
+    "SEMICOLON", 
+    "SLASH", 
+    "STAR", 
 
+    -- One or two character tokens.
+    -- [11]
+    [30] = 
+    "BANG", 
+    "BANG_EQUAL",                                
+    "EQUAL", 
+    "EQUAL_EQUAL",                              
+    "GREATER", 
+    "GREATER_EQUAL",                          
+    "LESS", 
+    "LESS_EQUAL",                                
 
-local function run(bs)
-    for lexeme in scanner(bs) do
-        -- if we want to convert comments to parenthesized
-        -- ones
-        --[[
-        if lexeme.Kind == 40  then  -- comment
-            print(string.format("(%s)",lexeme.lexeme))
-        end
-        --]]
-        
-        print(lexeme)
-    end
+    -- Literals.                                     
+    -- [19]
+    [40] =
+    "COMMENT",
+    "IDENTIFIER", 
+    "STRING", 
+    "NUMBER",   
+}
+
+local Token_mt = {
+    __tostring = function(self)
+        return string.format("%s %s %s", TokenType[self.Kind], self.lexeme, self.literal)
+    end;
+}
+local function Token(obj)
+    setmetatable(obj, Token_mt)
+    return obj;
 end
 
-local function runFile(filename)
-    local m = mmap(filename)
-    local ptr = m:getPointer()
-
-    local bs = octetstream(ptr, #m)
-    run(bs)
-end
-
-local function runPrompt()
-    while true do
-        io.write("> ")
-        run(octetstream(io.read("*l")))
-    end
-end
-
-local function main(args)
-    if #args > 1 then
-        return ("usage: lox [scriptname]")
-    elseif #args == 1 then
-        runFile(args[1])
-    else
-        runPrompt()
-    end
-
-end
-
-main(arg)
+return {
+    Token = Token;
+    TokenType = TokenType;
+}

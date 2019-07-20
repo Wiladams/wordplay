@@ -13,67 +13,23 @@ local octetstream = require("wordplay.octetstream")
 local B = string.byte
 
 
-local TokenType = enum {                                   
-    -- Single-character tokens.                      
-    [0] = "LEFT_PAREN", 
-    "RIGHT_PAREN", 
-    "LEFT_BRACKET", 
-    "RIGHT_BRACKET",
-    
-    [10] =
-    "COLON",
-    "COMMA", 
-    "DOT", 
-    "MINUS", 
-    "PERCENT",
-    "POUND",
-    "PLUS", 
-    "SEMICOLON", 
-    "SLASH", 
-    "STAR", 
+local gcode = require("gcode")
+local Token = gcode.Token;
+local TokenType = gcode.TokenType;
 
-    -- One or two character tokens.
-    -- [11]
-    [30] = 
-    "BANG", 
-    "BANG_EQUAL",                                
-    "EQUAL", 
-    "EQUAL_EQUAL",                              
-    "GREATER", 
-    "GREATER_EQUAL",                          
-    "LESS", 
-    "LESS_EQUAL",                                
 
-    -- Literals.                                     
-    -- [19]
-    [40] =
-    "COMMENT",
-    "IDENTIFIER", 
-    "STRING", 
-    "NUMBER",   
-}
+--[[
+    lexemeMap
 
-local Token_mt = {
-    __tostring = function(self)
-        return string.format("%s %s %s", TokenType[self.Kind], self.lexeme, self.literal)
-    end;
-}
-local function Token(obj)
-    setmetatable(obj, Token_mt)
-    return obj;
-end
-
+    Provides easy connection between first character of a lexeme
+    and possible code to scan it.
+]]
 local lexemeMap = {}
 lexemeMap[B'-'] = function(bs) 
     return (Token{Kind = TokenType.MINUS, lexeme='-', literal='', line=bs:tell()}); 
 end
 
 -- processing a comment, consume til end of line or EOF
---[[
-lexemeMap[B';'] = function(bs) 
-    return (Token{Kind = TokenType.SEMICOLON, lexeme=';', literal='', line=bs:tell()}); 
-end
-]]
 lexemeMap[B';'] = function(bs)
     local starting = bs:tell();
     local startPtr = bs:getPositionPointer();
@@ -96,6 +52,8 @@ lexemeMap[B'\t'] = function(bs) end
 lexemeMap[B'\n'] = function(bs)
     --bs:incrementLineCount();
 end
+
+-- nuber signs
 lexemeMap[B'-'] = function(bs) 
     return (Token{Kind = TokenType.MINUS, lexeme='-', literal='', line=bs:tell()}); 
 end
@@ -105,7 +63,7 @@ lexemeMap[B'+'] = function(bs)
 end
 
 
-
+-- scan a number
 local function lex_number(bs)
     -- start back at first digit
     bs:skip(-1)
@@ -138,7 +96,9 @@ local function lex_number(bs)
 
 end
 
-
+-- scan identifiers
+-- this is usually going to be a single character
+-- but we'll deal with multiples just for fun
 local function lex_identifier(bs)
     --print("lex_identifier")
     -- start back at first digit
@@ -163,34 +123,39 @@ local function lex_identifier(bs)
 
     -- return the identifier
     local tok =  Token{Kind = kind, lexeme=value, literal='', position=bs:tell()}
---print("lex_identifier: ", tok.kind, tok.lexeme, tok.literal, tok.line)
     return tok
 end
 
-local function lexemes(bs)
+-- iterator, returning individually scanned lexemes
+-- BUGBUG - make this a non-coroutine iterator
+local function scanner(bs)
 
-    local function iter()
+    local function token_gen(bs, state)
 
         while not bs:isEOF() do
             local c = bs:readOctet()
 
             if lexemeMap[c] then
-                local result, err = lexemeMap[c](bs)
-                if result then
+                local tok, err = lexemeMap[c](bs)
+                if tok then
                     -- BUGBUG
                     -- when routines only return a token
                     -- uncomment the following
-                    coroutine.yield(result)
+                    --coroutine.yield(result)
+                    return state + 1, tok;
                 else
                     -- deal with error if there was one
                 end
             else
                 if isdigit(c) then
-                    coroutine.yield(lex_number(bs))
+                    local tok = lex_number(bs)
+                    return state + 1, tok
+                    --coroutine.yield(lex_number(bs))
                 elseif isalpha(c) then
                     local tok = lex_identifier(bs)
                     --print(tok)
-                    coroutine.yield(tok)
+                    --coroutine.yield(tok)
+                    return state + 1, tok
                 else
                     print("UNKNOWN: ", string.char(c)) 
                 end
@@ -198,8 +163,9 @@ local function lexemes(bs)
         end
     end
 
-    return coroutine.wrap(iter)
+    --return coroutine.wrap(iter)
+    return token_gen, bs, 0
 end
 
 
-return lexemes
+return scanner
