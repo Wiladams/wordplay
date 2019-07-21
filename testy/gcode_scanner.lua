@@ -7,6 +7,7 @@ local cctype = require("wordplay.cctype")
 local isdigit = cctype.isdigit
 local isalpha = cctype.isalpha
 local isalnum = cctype.isalnum
+local isspace = cctype.isspace
 
 local octetstream = require("wordplay.octetstream")
 
@@ -77,11 +78,15 @@ local function lex_number(bs)
 
     -- look for fraction part
     --print("lex_number: ", string.char(bs:peekOctet()), string.char(bs:peekOctet(1)))
-    if bs:peekOctet() == B'.' and isdigit(bs:peekOctet(1)) then
-        bs:skip(1);
-
-        while isdigit(bs:peekOctet()) do
+    if (bs:peekOctet() == B'.') then
+        if isdigit(bs:peekOctet(1)) then
             bs:skip(1);
+
+            while isdigit(bs:peekOctet()) do
+                bs:skip(1);
+            end
+        elseif isspace(bs:peekOctet(1)) then
+            bs:skip(1)
         end
     end
 

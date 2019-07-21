@@ -1,3 +1,5 @@
+package.path = "../?.lua;"..package.path
+
 local octetstream = require("wordplay.octetstream")
 local mmap = require("mmap")
 
@@ -16,20 +18,49 @@ local ptr = m:getPointer()
 
 local bs = octetstream(ptr, #m)
 
+local function commands(gen, params, state)
+    print("commands: ", gen, params, state)
 
-local command
+    local function command_gen(params, state)
+        local command
 
-for state, lexeme in scanner(bs) do
-    if lexeme.Kind == 
-    -- if we want to convert comments to parenthesized
-    -- ones
-    --[[
-    if lexeme.Kind == 40  then  -- comment
-        print(string.format("(%s)",lexeme.lexeme))
+        local srcgen = params.srcgen;
+        local srcparams = params.srcparams;
+        local srcstate = params.srcstate;
+
+        while true do
+            local idx, tok = srcgen(srcparams, srcstate)
+
+            if not tok then
+                break;
+            end
+
+            if tok.Kind == TokenType.IDENTIFIER then
+                -- get the next thing which should be a number
+                srcstate, tok2 = srcgen(srcparams, srcstate+1)
+                if tok2.Kind == TokenType.MINUS or tok2.Kind == TokenType.PLUS then
+                    srcstate, tok3 = srcgen(srcparams, srcstate)
+                    if tok3.Kind == TokenType.NUMBER then
+                        local value = tok3.literal
+                        if tok2.Kind == TokenType.MINUS then
+                            value = value * -1;
+                        end
+                        return state+1, {command = tok.lexeme, value = value}
+                    end
+                elseif tok2.Kind == TokenType.NUMBER then
+                    return state+1, {command = tok.lexeme, value = tok2.literal}
+                end
+            end
+        end
     end
-    --]]
+
+    return command_gen, {srcgen = gen, srcparams = params, srcstate=0}, 0
+end
+
+for state, cmd in commands(scanner(bs)) do
+
     
-    print(state, lexeme)
+    print(state, cmd.command, cmd.value)
 end
 
 
