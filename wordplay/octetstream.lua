@@ -198,6 +198,10 @@ end
     writeOctet(self, octet)
 
     octet - the single parameter to be written
+
+    Return:
+        -1 if failure
+        1 if octet was written
 --]]
 function octetstream.writeOctet(self, octet)
     if self:remaining() < 1 then
@@ -214,8 +218,15 @@ function octetstream.writeOctetStream(self, stream)
     for _, c in stream:enumOctets() do
         -- we should bail early if we can't write
         -- the full stream
-        self:writeOctet(c)
+        local result = self:writeOctet(c)
+        if result == -1 then
+            break;
+        end
     end
+
+    -- should we return number of octets written?
+    -- what to return if there was an error?
+    return true;
 end
 
 --[[
