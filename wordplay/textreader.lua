@@ -30,20 +30,20 @@ end
 local CR = string.byte('\r')
 local LF = string.byte('\n')
 
-function TextReader.readLine(self)
-    if self.sourceStream:isEOF() then
+local function readSingleLine(src)
+    if src:isEOF() then
         return nil;
     end
 
-    local starting = self.sourceStream:tell();
-    local startPtr = self.sourceStream:getPositionPointer();
+    local starting = src:tell();
+    local startPtr = src:getPositionPointer();
     local ending = starting
 
     local haveCR = false;
     local haveLF = false;
 
-    while not self.sourceStream:isEOF() do
-        local c = self.sourceStream:readOctet();
+    while not src:isEOF() do
+        local c = src:readOctet();
         if haveCR then
             if c == LF then
                 haveLF = true;
@@ -61,7 +61,7 @@ function TextReader.readLine(self)
         end
     end
 
-    ending = self.sourceStream:tell();
+    ending = src:tell();
     if haveLF then
         ending = ending - 1;
     end
@@ -70,10 +70,27 @@ function TextReader.readLine(self)
     end
 
     local len = ending - starting
-    print("LEN: ", len)
+    --print("LEN: ", len)
     local value = ffi.string(startPtr, len)
 
     return value;
+end
+
+function TextReader.readLine(self)
+    return readSingleLine(self.sourceStream)
+end
+
+function TextReader.lines(self)
+    local function gen_line(param, state)
+        local value = readSingleLine(param)
+        if not value then
+            return nil;
+        end
+        
+        return state + 1, value
+    end
+
+    return gen_line, self.sourceStream, 0
 end
 
 return TextReader
