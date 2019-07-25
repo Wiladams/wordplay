@@ -35,6 +35,12 @@ end
     immediately by 'lf', they will be embedded in the string.
 
     Meaningfully, we don't include the line ending in the string.
+
+    Note:
+    I went with the peekOctet and getPositionPointer because it is the 
+    least amount of code, and it allows the luastring to contain anything
+    (except the line ending combos).  If we want to get real robust, we
+    can deal with alternative line endings based on encodings.
 ]]
 local CR = string.byte('\r')
 local LF = string.byte('\n')
