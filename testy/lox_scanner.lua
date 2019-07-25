@@ -107,7 +107,7 @@ local TokenType = enum {
 -- what is expected, then consume it and return true
 -- otherwise, don't consume it, and return false.
 local function match(bs, expected)
-    if bs:EOF() then
+    if bs:isEOF() then
         return false;
     end
 
@@ -215,7 +215,7 @@ end
 
 lexemeMap[B'/'] = function(bs)
     if match(bs, B'/') then 
-        while bs:peekOctet() ~= B'\n' and not bs:EOF() do
+        while bs:peekOctet() ~= B'\n' and not bs:isEOF() do
             bs:skip(1)
         end
     else

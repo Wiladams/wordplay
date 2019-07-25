@@ -1,0 +1,12 @@
+<cfg  version = "2" >
+<!--  
+Oh, wait, I forgot to put something inside this comment
+-->
+<ident >Test Name< /ident>
+<descr>A test xml data file with annoying spaces everywhere</descr>
+< params>
+  <board width="10" height="20"/>
+  <size>20</size >
+</params>
+
+</cfg >
