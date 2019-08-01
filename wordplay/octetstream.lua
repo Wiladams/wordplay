@@ -255,33 +255,18 @@ end
 
 
 
+
+
 --[[
-function octetstream.enumOctets(self)
-    -- The function that generates individual
-    -- octets, returning 'nil' when done
-    local function octetgen(bs, state)
-        if bs:isEOF() then
-            return nil;
-        end
+-- A pure functional iterator of the octets in the stream.
+-- There are no side effect of running this iterator
 
-        return state+1, bs:readOctet();
-    end
-
-    -- we use a full range of ourself as the 
-    -- parameters for enumeration.
-    -- makes for a really easy generator
-    return octetgen, self:range(self.size, 0), 0
-end
---]]
-
--- A pure functional iterator of the octets
--- in the stream.
--- The stream  is not affected by subsequent calls
--- to the iterator.
 -- The iterator can be started at any given offset
 -- indicated by the initial 'state'
 -- maybe given a length as well, but at that point
 -- you can just start with a range
+--]]
+
 function octetstream.octets(self, state)
     state = state or 0
 
