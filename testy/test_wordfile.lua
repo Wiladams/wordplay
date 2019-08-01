@@ -18,10 +18,11 @@ local trans_item = wordplay.trans_item
 local quote_iter = wordplay.quote_iter
 --]]
 
-local spairs = require("spairs")
+local spairs = require("wordplay.spairs")
 
 local filename = select(1, ...)
 if not filename then 
+    print("Usage: luajit test_wordfile.lua <filename>")
     return false, 'no filename specified'
 end
 
@@ -151,7 +152,7 @@ end
 
 --test_quotes()
 --test_wordlist()
---test_wordcount()
-test_wordfreq()
+test_wordcount()
+--test_wordfreq()
 --test_wordlength()
 

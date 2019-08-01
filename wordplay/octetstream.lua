@@ -215,7 +215,7 @@ function octetstream.writeOctet(self, octet)
 end
 
 function octetstream.writeOctetStream(self, stream)
-    for _, c in stream:enumOctets() do
+    for _, c in stream:octets() do
         -- we should bail early if we can't write
         -- the full stream
         local result = self:writeOctet(c)
@@ -254,22 +254,8 @@ end
 --]]
 
 
+
 --[[
-    enumOctets(self)
-
-    Return an iterator over all the octets in the stream.
-
-    Parameters: -none-
-    
-    Return: an iterator similar to ipairs (gen, param, state)
-
-    Usage:
-
-    local os = octetstream("Hello, Stream")
-    for _, c in os:enumOctets() do
-        print(c, string.char(c))
-    end
-]]
 function octetstream.enumOctets(self)
     -- The function that generates individual
     -- octets, returning 'nil' when done
@@ -286,7 +272,31 @@ function octetstream.enumOctets(self)
     -- makes for a really easy generator
     return octetgen, self:range(self.size, 0), 0
 end
+--]]
 
+-- A pure functional iterator of the octets
+-- in the stream.
+-- The stream  is not affected by subsequent calls
+-- to the iterator.
+-- The iterator can be started at any given offset
+-- indicated by the initial 'state'
+-- maybe given a length as well, but at that point
+-- you can just start with a range
+function octetstream.octets(self, state)
+    state = state or 0
+
+    local function octet_gen(params, state)
+        --print("STATE: ", state)
+        -- check to see if we've reach end of stream
+        if params.size - state < 1 then
+            return nil;
+        end
+
+        return state+1, params.data[state]
+    end
+
+    return octet_gen, self, state
+end
 
 
 return octetstream

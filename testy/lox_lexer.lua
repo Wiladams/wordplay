@@ -107,7 +107,7 @@ end
 -- what is expected, then consume it and return true
 -- otherwise, don't consume it, and return false.
 local function match(bs, expected)
-    if bs:EOF() then
+    if bs:isEOF() then
         return false;
     end
 
@@ -214,7 +214,7 @@ lexemeMap[B'/'] = function(bs)
     if match(bs, B'/') then 
         -- processing a comment, consume til end of line or EOF
         -- totally throw away comment
-        while bs:peekOctet() ~= B'\n' and not bs:EOF() do
+        while bs:peekOctet() ~= B'\n' and not bs:isEOF() do
             bs:skip(1)
         end
     else
@@ -239,7 +239,7 @@ lexemeMap[B'"'] = function(bs)
     local starting = bs:tell()
     local startPtr = bs:getPositionPointer();
 
-    while bs:peekOctet() ~= B'"' and not bs:EOF() do
+    while bs:peekOctet() ~= B'"' and not bs:isEOF() do
         if bs:peekOctet() == B'\n' then
             bs:incrementLineCount();
         end
@@ -249,7 +249,7 @@ lexemeMap[B'"'] = function(bs)
     end
 
     -- unterminated string
-    if bs:EOF() then
+    if bs:isEOF() then
         -- report unterminated string error
         return ;
     end
@@ -326,7 +326,7 @@ local function lexemes(str)
 
     local function iter()
 
-        while not bs:EOF() do
+        while not bs:isEOF() do
             local c = bs:readOctet()
             --print(string.char(c))
             if lexemeMap[c] then

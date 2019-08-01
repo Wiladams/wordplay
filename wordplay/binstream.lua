@@ -84,7 +84,7 @@ function binstream.remaining(self)
     return self.size - self.cursor
 end
 
-function binstream.EOF(self)
+function binstream.isEOF(self)
     return self:remaining() < 1
 end
 
@@ -169,7 +169,31 @@ function binstream.readOctet(self)
     
     return self.data[self.cursor-1]
  end
- 
+
+-- A pure functional iterator of the octets
+-- in the stream.
+-- The stream  is not affected by subsequent calls
+-- to the iterator.
+-- The iterator can be started at any given offset
+-- indicated by the initial 'state'
+function binstream.octets(self, state)
+    state = state or 0
+
+    local function octet_gen(params, state)
+        print("STATE: ", state)
+        -- check to see if we've reach end of stream
+        if params.size - state < 1 then
+            return nil;
+        end
+
+        return state+1, params.data[state]
+    end
+
+    return octet_gen, self, state
+end
+
+--[[
+    
 function binstream.octets(self)
     return coroutine.wrap(function()
         while true do
@@ -181,7 +205,7 @@ function binstream.octets(self)
         end
     end)
 end
-
+--]]
 
 -- Read an integer value
 -- The parameter 'n' determines how many bytes to read.
@@ -247,7 +271,7 @@ function binstream.readString(self, n)
     local str = nil;
 
     --print("BS: ", self:remaining())
-    if self:EOF() then
+    if self:isEOF() then
         return false, "EOF"
     end
 

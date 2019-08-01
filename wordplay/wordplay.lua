@@ -49,6 +49,30 @@ function exports.trans_item(op, prod)
     end)
 end
 
+function exports.filter(tformer, gen, params, state)
+    local function filter_gen(params, state)
+        local srcgen = params.srcgen;
+        local srcparams = params.srcparams;
+        local srcstate = params.srcstate;
+
+        while true do
+            local idx, item = srcgen(srcparams, srcstate)
+
+            if idx == nil then
+                return nil;
+            end
+
+            local success, value = tformer(item)
+            if success then
+                return value;
+            end
+        end
+    end
+
+    return filter_gen, {srcgen = gen, srcparams = params, srcstate=state}, 0
+end
+
+--[[
 function exports.filter(tformer, prod)
     return coroutine.wrap(function()
         for item in prod do
@@ -59,6 +83,8 @@ function exports.filter(tformer, prod)
         end
     end)    
 end
+--]]
+
 
 -- iterates things that are quoted
 -- can not recover from when quote is too long
