@@ -499,6 +499,44 @@ end
 exports.isNullIterator = export0(isNullIterator)
 methods.isNullIterator = method0(isNullIterator)
 
+--[[
+    Transformations
+]]
+local function map_gen(param, state)
+    local gen_x, param_x, fn = param[1], param[2], param[3]
+    return callIfNotEmpty(fn, gen_x(param_x, state))
+end
+
+local function map(fn, gen, param, state)
+    return wrap(map_gen, {gen, param, fn}, state)
+end
+exports.map = export1(map)
+methods.map = method1(map)
+
+
+local function enumerate_gen_call(state, i, state_x, ...)
+    if state_x == nil then
+        return nil;
+    end
+    return {i+1, state_x}, i, ...
+end
+
+local function enumerate_gen(param, state)
+    local gen_x, param_x = param[1], param[2]
+    local i, state_x = state[1], state[2]
+    return enumerate_gen_call(state, i, gen_x(param_x, state_x))
+end
+
+local function enumerate(gen, param, state)
+    return wrap(enumerate_gen, {gen, param}, {1, state})
+end
+exports.enumerate = export0(enumerate)
+methods.enumerate = method0(enumerate)
+
+
+--[[
+    Compositions
+]]
 
 --[[
     Iterators

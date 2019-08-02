@@ -55,7 +55,7 @@ each(print, take(5, tabulate(function(x) return x^2 end)))
 
 print("FILTERING")
 each(print, filter(function(x) return x % 3 == 0 end, range(10)))
---each(print, take(5, filter(function(i, x) return i % 3 == 0 end, enumerate(duplicate('x')))))
+each(print, take(5, filter(function(i, x) return i % 3 == 0 end, enumerate(duplicate('x')))))
 
 print("REDUCING")
 print('print(length({"a", "b", "c", "d", "e"}))')
@@ -66,3 +66,12 @@ print('print(length(range(0)))')
 print(length(range(0)))
 print('print(length(range(10,100)))')
 print(length(range(10,100)))
+
+print("TRANSFORMATIONS")
+print('each(print, map(function(x) return 2 * x end, range(4)))')
+each(print, map(function(x) return 2 * x end, range(4)))
+local fn = function(...) return 'map', ... end
+each(print, map(fn, range(4)))
+print("INTERSPERSE")
+--each(print, intersperse("x", {"a", "b", "c", "d", "e"}))
+
