@@ -1,13 +1,21 @@
 --[[
     A recreation of functional programming routines
+    from luafun
     
     https://luafun.github.io/
 
-    Why recreate?  To play with various things without disturbing
+    Why recreate?  
+    Why not fork?
+    Why not pull requests?
+
+    To play with various things without disturbing
     the original.
 
-    Do not want any usage of 'assert' or 'error', use return values
-    Do not compare to 0, compare < 1
+    Do not want any usage of 'assert' or 'error', 
+    use return values
+    Some style things
+    Want to add support for 
+    optimize luajit ctype objects
 ]]
 
 
@@ -85,6 +93,28 @@ local function returnIfNotEmpty(state, ...)
         return nil
     end
     return ...
+end
+
+--[[
+    pure functional iterators are supposed to be
+    copyable.  Some iterators, such as cycle, 
+    use this feature.
+]]
+local function deepCopy(orig)
+    local otype = type(orig)
+    local copy
+
+    if otype == "table" then
+        copy = {}
+        for okey, ovalue in next, orig, nil do
+            copy[deepcopy(okey)] = deepcopy(ovalue)
+        end
+    else
+        -- kind of cheap bailout.  The orig
+        -- might have a clone() function
+        copy = orig
+    end
+    return copy
 end
 
 
@@ -408,6 +438,67 @@ end
 exports.partition = export1(partition)
 methods.partition = method1(partition)
 
+--[[
+    Reducing
+]]
+local function foldl_call(fn, start, state, ...)
+    if state == nil then
+        return nil, start
+    end
+    return state, fn(start, ...)
+end
+
+local function foldl(fn, start, gen_x, param_x, state_x)
+    while true do
+        state_x, start = foldl_call(fn, start, gen_x(param_x, state_x))
+        if state_x == nil then
+            break;
+        end
+    end
+    return start
+end
+exports.foldl = export2(foldl)
+methods.foldl = method2(foldl)
+exports.reduce = exports.foldl
+methods.reduce = methods.foldl
+
+local function length(gen, param, state)
+    -- speedup if we already know the quick answer
+    if gen == ipairs_gen or gen == string_gen then
+        return #param
+    end
+
+    local len = 0
+
+    while true do
+        state = gen(param,state)
+        if state == nil then
+            break;
+        end
+        len = len+1
+    end
+
+    return len
+
+    --[[
+    -- This does the same without the conditional
+    -- test every time through the loop.  Might be better
+    repeat
+        state = gen(param, state)
+        len = len + 1
+    until state == nil
+    return len - 1
+    --]]
+end
+exports.length = export0(length)
+methods.length = method0(length)
+
+local function isNullIterator(gen, param, state)
+    return gen(param, deepcopy(state)) == nil
+end
+exports.isNullIterator = export0(isNullIterator)
+methods.isNullIterator = method0(isNullIterator)
+
 
 --[[
     Iterators
@@ -460,11 +551,13 @@ local function tabulate(fn)
 end
 exports.tabulate = tabulate
 
+-- pure convenience vs using duplicate()
 local function zeroes()
     return wrap(duplicate_gen, 0, 0)
 end
 exports.zeroes = zeroes
 
+-- pure convenience vs using duplicate()
 local function ones()
     return wrap(duplicate_gen, 1, 0)
 end

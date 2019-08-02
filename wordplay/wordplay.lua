@@ -36,23 +36,7 @@ end
 --[[
     iterator parts
 --]]
---[[
-    simple iterator that takes the items coming
-    from the input iterator, applies an operation
-    and sends the output.
 
-    Don't need this as the filter iterator can 
-    do the same thing.
-]]
---[[
-function exports.trans_item(op, prod)
-    return coroutine.wrap(function()
-        for c in prod do
-            send(op(c))
-        end
-    end)
-end
---]]
 
 function exports.filter(tformer, gen, params, state)
     --print("filter: ", tformer, gen, params, state)
