@@ -180,7 +180,7 @@ function binstream.octets(self, state)
     state = state or 0
 
     local function octet_gen(params, state)
-        print("STATE: ", state)
+        --print("STATE: ", state)
         -- check to see if we've reach end of stream
         if params.size - state < 1 then
             return nil;

@@ -40,7 +40,11 @@ end
     simple iterator that takes the items coming
     from the input iterator, applies an operation
     and sends the output.
+
+    Don't need this as the filter iterator can 
+    do the same thing.
 ]]
+--[[
 function exports.trans_item(op, prod)
     return coroutine.wrap(function()
         for c in prod do
@@ -48,63 +52,63 @@ function exports.trans_item(op, prod)
         end
     end)
 end
+--]]
 
 function exports.filter(tformer, gen, params, state)
+    --print("filter: ", tformer, gen, params, state)
     local function filter_gen(params, state)
         local srcgen = params.srcgen;
         local srcparams = params.srcparams;
-        local srcstate = params.srcstate;
+        local item
 
         while true do
-            local idx, item = srcgen(srcparams, srcstate)
-
-            if idx == nil then
-                return nil;
+            state, item = srcgen(srcparams, state)
+            if state == nil then
+                break;
             end
 
-            local success, value = tformer(item)
-            if success then
-                return value;
+            local result = tformer(item)
+            --print("filter_gen: ", state, item, result)
+            if result then
+                return state, result;
             end
         end
+
+        -- if we get to here, we've run out of stuff
+        return nil;
     end
 
-    return filter_gen, {srcgen = gen, srcparams = params, srcstate=state}, 0
+    return filter_gen, {srcgen = gen, srcparams = params}, state
 end
-
---[[
-function exports.filter(tformer, prod)
-    return coroutine.wrap(function()
-        for item in prod do
-            local success, value = tformer(item)
-            if success then
-                send(value)
-            end
-        end
-    end)    
-end
---]]
 
 
 -- iterates things that are quoted
 -- can not recover from when quote is too long
 -- or if quotes don't book end properly
-function exports.quote_iter(prod)
+function exports.quote_iter(srcgen, srcparams, srcstate)
     local bufferSize = 4096
     local buffer = ffi.new("uint8_t[?]", 4096)
 
-    return coroutine.wrap(function ()
+    local function quote_gen(params, state)
+        local srcgen = params.srcgen;
+        local srcparams = params.srcparams;
+
         local offset = 0;
         local inquote = false
+        local c
 
-        for c in prod do
+        while true do
+            state, c = srcgen(srcparams, state)
+            if not state then
+                break;
+            end
+
             if inquote then
                 if c == string.byte('"') then
                     --print("QEND")
                     inquote = false
                     local str = ffi.string(buffer, offset)
-                    send(str)
-                    offset = 0
+                    return state, str
                 else
                     buffer[offset] = c;
                     offset = offset + 1
@@ -123,9 +127,11 @@ function exports.quote_iter(prod)
         -- working on a word
         if offset > 0 then
             local str = ffi.string(buffer, offset)
-            send(str)
+            return state, str
         end
-    end)
+    end
+
+    return quote_gen, {srcparams = srcparams, srcgen = srcgen}, srcstate
 end
 
 --[[
@@ -166,41 +172,62 @@ end
 
 
 --[[
- segmenter
+    segmenter
+    
     Consume an iterator of bytes, produce an iteration 
-    of lua strings.  Specify a separator byte.
+    of lua strings.  
+    
+    Specify a separator byte.
     Do not return empty strings
+
+    Maximum string size is 1024 bytes
  --]]
 
- function exports.segmenter(sep, prod)
+ function exports.segmenter(sep, gen, params, state)
     if type(sep) == "string" then
         sep = string.byte(sep)
     end
 
     local bufferSize = 1024
-    local buffer = ffi.new("uint8_t[?]", 1024)
+    local buffer = ffi.new("uint8_t[1024]")
 
-    return coroutine.wrap(function ()
+    local function segment_gen(params, state)
+        local srcgen = params.srcgen
+        local srcparams = params.srcparams
+
         local offset = 0;
-        for c in prod do
+        while true do
+            state, c = srcgen(srcparams, state)
+            if not state then
+                break;
+            end
+
             if c ~= sep then
                 buffer[offset] = c;
                 offset = offset + 1
             else
-                local str = ffi.string(buffer, offset)
-                send(str)
-                offset = 0
+                -- we've come across the separator
+                if offset > 0 then
+                    -- if we've already captured some characters,
+                    -- then break out
+                    break;
+                end 
+
+                -- if we got to here
+                -- we need to just loop around some more
+                -- because we have a blank string
             end
         end
 
-        -- trailing edge
-        -- no more characters coming in, but we were
-        -- working on a word
-        if offset > 0 then
-            local str = ffi.string(buffer, offset)
-            send(str)
+        if offset < 1 then
+            return nil;
         end
-    end)
+
+        local str = ffi.string(buffer, offset)
+        return state, str
+    end
+
+    return segment_gen, {srcgen = gen, srcparams = params}, state
 end
 
 

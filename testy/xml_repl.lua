@@ -1,12 +1,13 @@
 
 --local scanner = require("lox_lexer")
-local scanner = require("xml_scanner")
+local XmlScanner = require("xml_scanner")
 local octetstream = require("wordplay.octetstream")
 local mmap = require("mmap")
 
 
 local function run(bs)
-    for state, lexeme in scanner(bs) do
+    local xs = XmlScanner:new(bs)
+    for state, lexeme in xs:tokens() do
         -- if we want to convert comments to parenthesized
         -- ones
         --[[

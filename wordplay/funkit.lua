@@ -27,9 +27,7 @@ end
 --[[
     Generators
 ]]
-
-
--- An iterator that returns no values
+-- A generator that returns no values
 -- convenient for when the parameters don't
 -- conform, but you MUST return a valid iterator
 function exports.nil_gen()
@@ -38,6 +36,9 @@ function exports.nil_gen()
     end)
 end
 
+--[[
+    Simple iterators
+]]
 local function string_iter(str)
     return coroutine.create(function()
         for idx=1,#str do

@@ -9,15 +9,7 @@ local ispunct = cctype.ispunct
 
 local mmap = require("mmap")
 local binstream = require("wordplay.binstream")
-
 local wordplay = require("wordplay.wordplay")()
---[[
-local filter = wordplay.filter
-local word_iter = wordplay.word_iter
-local trans_item = wordplay.trans_item
-local quote_iter = wordplay.quote_iter
---]]
-
 local spairs = require("wordplay.spairs")
 
 local filename = select(1, ...)
@@ -29,57 +21,83 @@ end
 local m = mmap(filename)
 local ptr = m:getPointer()
 
---print("size: ", #m)
 local bs = binstream(ptr, #m)
 
 
+-- just pass any item straight through
+local function passthru(item)
+    return item 
+end
 
 local function removePunct(item)
+    --print("removePunct: ", item)
     if ispunct(item) then
-        return false, item
+        return nil
     end
 
-    return true, item
+    return item
 end
 
 local function transformPunct(item)
     if ispunct(item) then
-        return true, string.byte(' ')
+        return string.byte(' ')
     end
 
-    return true, item
+    return item
 end
 
 local function removeShorts(size, item)
     return function(item)
         if #item < size then
-            return false, item
+            return nil
         end
 
-        return true,  item
+        return item
     end
 end
 
 
-
-
-local function test_wordlist()
-    for word in word_iter(trans_item(toupper, filter(removePunct, bs:octets()))) do
-        print(word)
-    end
-end
 
 local function test_quotes()
-    for word in quote_iter(bs:octets()) do
-
+    for _,word in quote_iter(bs:octets()) do
         print(word)
         print("----")
     end
 end
 
-local function test_wordcount()
+
+
+
+
+--[[
+    Testing chaining filters together.
+    Filters are godd because they themselves
+    are iterators, so easily chainable.
+
+    Filters act on a single item at a time.  They can
+    transform the item, passthru, or delete.
+]]
+local function test_filter()
+    -- remove punctuation
+    -- and convert everything to uppercase
+    for _, item in filter(toupper, filter(removePunct, bs:octets())) do
+        io.write(string.char(item))
+    end
+end
+
+local function test_words()
+    -- remove punctuation
+    -- convert to uppercase
+    -- segment base on <SP>
+
+    for _, item in segmenter(' ', filter(toupper, filter(removePunct, bs:octets()))) do
+        print(item)
+    end
+end
+
+local function test_word_count()
     local counter = 0
-    for word in word_iter( filter(removePunct, bs:octets())) do
+    for _, item in segmenter(' ', filter(removePunct, bs:octets())) do
         counter = counter+1
     end
     print("wc: ", counter)
@@ -87,20 +105,47 @@ end
 
 local function test_wordlength()
     local dict = {}
-    for word in  word_iter( trans_item(toupper, filter(transformPunct, bs:octets()))) do
-        local value = dict[word]
-        if not value then
-            dict[word] = #word
+    for _, word in  segmenter(' ', filter(toupper, filter(removePunct, bs:octets()))) do
+        local len = #word
+        if not dict[len] then
+            dict[len] = 1;
+        else
+            dict[len] = dict[len] + 1;
         end
+        local value = dict[word]
     end
 
     -- iterate dictionary in sorted order
+    print("length   occurences")
     for k,v in spairs(dict, function(t,a,b) return t[b] < t[a] end) do
-        print(string.format("    %s = %d,", k,v))
+        print(string.format("%5d  = %d,", k,v))
     end
 end
 
-local function test_wordfreq()
+local function test_word_frequency()
+    -- remove punctuation
+    -- convert to uppercase
+    -- segment base on <SP>
+    -- increment dictionary
+    -- print results
+
+    local words = {}
+
+    for _, item in segmenter(' ', filter(toupper, filter(removePunct, bs:octets()))) do
+        if words[item] then
+            words[item] = words[item] + 1;
+        else
+            words[item] = 1;
+        end
+    end
+
+    for k,v in spairs(words, function(t,a,b) return t[b] < t[a] end) do
+        print(string.format("    %s = %d,", k,v))
+        --print(k,v)
+    end
+end
+
+local function test_words_worth()
     local dict = {}
     local longest = 0
     local longestword = nil
@@ -112,8 +157,7 @@ local function test_wordfreq()
     -- remove punctuation
     -- turn to upper case
     -- turn into words
-    -- remove shortest words
-    for word in filter(removeShorts(3), word_iter( trans_item(toupper, filter(removePunct, bs:octets())))) do
+    for _, word in segmenter(' ', filter(toupper, filter(removePunct, bs:octets()))) do
         counter = counter + 1
         if #word > longest then
             longest = #word
@@ -150,9 +194,15 @@ local function test_wordfreq()
 end
 
 
---test_quotes()
---test_wordlist()
-test_wordcount()
---test_wordfreq()
+
+--test_filter()
+--test_words()
+--test_word_count()
 --test_wordlength()
+--test_word_frequency()
+--test_words_worth()
+
+test_quotes()
+
+
 

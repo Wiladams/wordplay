@@ -75,7 +75,7 @@ lexemeMap[B';'] = function(bs)
     local startPtr = bs:getPositionPointer();
 
     while bs:peekOctet() ~= B'\n' and not bs:isEOF() do
-            bs:skip(1)
+        bs:skip(1)
     end
 
     local ending = bs:tell();
@@ -236,20 +236,15 @@ end
 
 -- iterator, returning individually scanned lexemes
 -- BUGBUG - make this a non-coroutine iterator
-local function scanner(bs)
+local function lexemes(bs)
 
     local function token_gen(bs, state)
-
         while not bs:isEOF() do
             local c = bs:readOctet()
 
             if lexemeMap[c] then
                 local tok, err = lexemeMap[c](bs)
                 if tok then
-                    -- BUGBUG
-                    -- when routines only return a token
-                    -- uncomment the following
-                    --coroutine.yield(result)
                     return bs:tell(), tok;
                 else
                     -- deal with error if there was one
@@ -271,5 +266,31 @@ local function scanner(bs)
     return token_gen, bs, bs:tell()
 end
 
+local XmlScanner = {}
+local XmlScanner_mt = {
+    __index = XmlScanner;
+}
+function XmlScanner.init(self, obj)
 
-return scanner
+    setmetatable(obj, XmlScanner_mt)
+
+    return obj;
+end
+
+function XmlScanner.new(self, bs)
+    if not bs then return nil end
+
+    return self:init({stream = bs})
+end
+
+--[[
+    tokens()
+
+    returns an iterator over tokens in the captured
+    stream.
+]]
+function XmlScanner.tokens(self)
+    return lexemes(self.stream)
+end
+
+return XmlScanner
