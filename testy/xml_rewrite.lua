@@ -1,7 +1,7 @@
 package.path = "../?.lua;"..package.path
 
 local octetstream = require("wordplay.octetstream")
-local mmap = require("mmap")
+local mmap = require("wordplay.mmap")
 
 local scanner = require("xml_scanner")
 local xml_common = require("xml_common")

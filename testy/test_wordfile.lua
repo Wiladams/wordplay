@@ -7,7 +7,7 @@ local toupper = cctype.toupper
 local tolower = cctype.tolower
 local ispunct = cctype.ispunct
 
-local mmap = require("mmap")
+local mmap = require("wordplay.mmap")
 local binstream = require("wordplay.binstream")
 local wordplay = require("wordplay.wordplay")()
 local spairs = require("wordplay.spairs")

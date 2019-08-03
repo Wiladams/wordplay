@@ -2,7 +2,7 @@
 --local scanner = require("lox_lexer")
 local XmlScanner = require("xml_scanner")
 local octetstream = require("wordplay.octetstream")
-local mmap = require("mmap")
+local mmap = require("wordplay.mmap")
 
 
 local function run(bs)
