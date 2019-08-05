@@ -258,21 +258,22 @@ end
 
 
 --[[
+    octets()
+
 -- A pure functional iterator of the octets in the stream.
 -- There are no side effect of running this iterator
 
--- The iterator can be started at any given offset
--- indicated by the initial 'state'
--- maybe given a length as well, but at that point
--- you can just start with a range
+    The iterator can be started at any given offset
+    indicated by the initial 'state'
+    offset will default to 0 if not specified
 --]]
 
 function octetstream.octets(self, state)
     state = state or 0
 
     local function octet_gen(params, state)
-        --print("STATE: ", state)
-        -- check to see if we've reach end of stream
+        -- if we've reached the end of the stream
+        -- terminate the iteration
         if params.size - state < 1 then
             return nil;
         end

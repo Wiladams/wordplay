@@ -17,6 +17,7 @@ local B = string.byte
 local xml_common = require("xml_common")
 local Token = xml_common.Token;
 local TokenType = xml_common.TokenType;
+local STATES = xml_common.STATES;
 
 -- helper function
 -- if the next character in the stream matches
@@ -235,9 +236,10 @@ local function lex_identifier(bs)
 end
 
 -- iterator, returning individually scanned lexemes
--- BUGBUG - make this a non-coroutine iterator
-local function lexemes(bs)
-
+-- need to make this pure functional
+-- create a range on the stream?
+local function XmlScanner.lexemes(self)
+    
     local function token_gen(bs, state)
         while not bs:isEOF() do
             local c = bs:readOctet()
@@ -263,7 +265,7 @@ local function lexemes(bs)
         end
     end
 
-    return token_gen, bs, bs:tell()
+    return token_gen, self.stream, self.stream:tell()
 end
 
 local XmlScanner = {}

@@ -25,3 +25,11 @@ lox - lox_scanner, lox_lexer, lox_bnf
 mmap - memory mapped file handling
 
 spairs - sorting dictionary
+
+
+Resources
+---------
+
+Sample files
+
+u_ex171118-sample.txt   https://www.site-logfile-explorer.com/logfile-samples/iis.aspx
