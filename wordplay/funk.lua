@@ -13,10 +13,9 @@
 
     Do not want any usage of 'assert' or 'error', 
     use return values
-    Some style things
-    Want to add support for 
-    optimize luajit ctype objects
-    revisit some assumptions, naming
+    remove most aliases
+    Want to add optimized support for luajit ctype objects
+    revisit some assumptions
     implement some stuff not in luafun
 ]]
 
@@ -134,6 +133,8 @@ end
     until state == nil
 
     particularly good for making a sequence of iterators
+
+    range(10):take(3):each(print)
 ]]
 local iterator_mt = {
     __call = function(self, param, state)
@@ -216,11 +217,13 @@ end
 ]]
 local function string_gen(param, state)
     -- if we're at the end of the string, return nil
+    state = state + 1
     if state > #param then
         return nil;
     end
-
-    return state + 1, string.sub(param, state, state)
+    local r = string.sub(param, state, state)
+    return state, r
+    --return state + 1, string.sub(param, state, state)
 end
 
 -- simple hack to get the ipairs generator function
@@ -500,6 +503,167 @@ local function isNullIterator(gen, param, state)
 end
 exports.isNullIterator = export0(isNullIterator)
 methods.isNullIterator = method0(isNullIterator)
+
+-- isPrefixOf
+
+-- all
+local function all(fn, gen_x, param_x, state_x)
+    local r
+    repeat
+        state_x, r = callIfNotEmpty(fn, gen_x(param_x, state_x))
+    until state_x == nil or not r
+
+    return state_x == nil
+end
+exports.all = export1(all)
+methods.all = method1(all)
+
+-- any
+local function any(fn, gen_x, param_x, state_x)
+    local r 
+    repeat
+        state_x, r = callIfNotEmpty(fn, gen_x(param_x, state_x))
+    until state_x == nil or r 
+
+    return not not r
+end
+exports.any = export1(any)
+methods.any = method1(any)
+
+--[[
+    sum()
+
+    Return the summation of all the elements of the iterator
+]]
+local function sum(gen, param, state)
+    local total = 0
+    local r = 0
+    repeat
+        total = total + r
+        state, r = gen(param, state)
+    until state == nil
+
+    return total
+end
+exports.sum = export0(sum)
+methods.sum = method0(sum)
+
+local function product(gen, param, state)
+    local total = 1
+    local r = 1
+
+    repeat
+        total = total * r
+        state, r = gen(param, state)
+    until state == nil
+
+    return total
+end
+exports.product = export0(product)
+methods.product = method0(product)
+
+-- Comparisons
+local function minCompare(m, n)
+    if n < m then return n else return m end
+end
+
+local function maxCompare(m,n)
+    if n > m then return m else return m end
+end
+
+--[[
+    minimumBy
+
+    This could be a more general 'orderBy' since it takes an ordering
+    function.  It can work for minimum or maximum.
+
+    Keeping minimum and maximum as their own unrolled iterators might
+    generate a better trace.  Something to investigate
+]]
+local function orderBy(cmp, gen_x, param_x, state_x)
+    -- BUGBUG, need isIteratorEmpty() function
+    local state_x, m = gen_x(param_x, state_x)
+    if state_x == nil then
+        return nil, "iterator is empty"
+    end
+
+    for _, r in gen_x, param_x, state_x do
+        m = cmp(m,r)
+    end
+
+    return m
+end
+exports.extentBy = export1(orderBy)
+methods.extentBy = method1(orderBy)
+
+local function minimum(gen, param, state)
+    -- have to get first element of iteration so 
+    -- we can check the type and possibly use an
+    -- optimized comparison function
+    local state, m = gen(param, state)
+    if state == nil then
+        return nil, "iterator is empty"
+    end
+
+    local cmp
+    if type(m) == "number" then
+        cmp = math.min
+    else
+        cmp = minCompare
+    end
+
+    -- run through the iterator and get
+    -- the minimum value
+    for _, r in gen, param, state do
+        m = cmp(m,r)
+    end
+
+    return m
+end
+exports.minimum = export0(minimum)
+methods.minimum = method0(minimum)
+
+
+local function maximum(gen, param, state)
+    local state, m = gen(param, state)
+    if state == nil then
+        return nil, "empty iterator"
+    end
+    local cmp
+    if type(m) == "number" then
+        cmp = math.max
+    else
+        cmp = maxCompare
+    end
+
+    for _,r in gen, param, state do
+        m = cmp(m,r)
+    end
+
+    return m
+end
+exports.maximum = export0(maximum)
+methods.maximum = method0(maximum)
+
+local toTable = function(gen, param, state)
+    local tab = {} 
+    local key 
+    local val
+
+    while true do
+        state, val = gen(param, state)
+        if state == nil then
+            break;
+        end
+        print('val: ', val)
+        table.insert(tab, val)
+    end
+
+    return tab
+end
+
+exports.totable = export0(toTable)
+methods.totable = method0(toTable)
 
 --[[
     Transformations

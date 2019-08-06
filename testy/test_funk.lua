@@ -1,7 +1,7 @@
 package.path = "../?.lua;"..package.path
 
 local funk = require("wordplay.funk")()
-
+--[[
 print("STRING")
 for _it, c in iter("Hello Funk.") do
     print(c)
@@ -57,7 +57,7 @@ print("FILTERING")
 each(print, filter(function(x) return x % 3 == 0 end, range(10)))
 each(print, take(5, filter(function(i, x) return i % 3 == 0 end, enumerate(duplicate('x')))))
 
-print("REDUCING")
+print("REDUCING/FOLDING")
 print('print(length({"a", "b", "c", "d", "e"}))')
 print(length({"a", "b", "c", "d", "e"}))
 print('print(length({}))')
@@ -67,6 +67,40 @@ print(length(range(0)))
 print('print(length(range(10,100)))')
 print(length(range(10,100)))
 
+-- all
+print('print(all(function(x) return x end, {true, true, true, true}))')
+print(all(function(x) return x end, {true, true, true, true}))
+print('print(all(function(x) return x end, {true, true, true, false}))')
+print(all(function(x) return x end, {true, true, true, false}))
+-- any
+print('print(any(function(x) return x end, {false, false, false, false}))')
+print(any(function(x) return x end, {false, false, false, false}))
+print('print(any(function(x) return x end, {false, false, false, true}))')
+print(any(function(x) return x end, {false, false, false, true}))
+
+-- minimum
+print('print(minimum(range(1, 10, 1)))')
+print(minimum(range(1, 10, 1)))
+print('print(minimum({"f", "d", "c", "d", "e"}))')
+print(minimum({"f", "d", "c", "d", "e"}))
+print('print(min({}))')
+print(minimum({}))
+
+-- maximum
+print('print(max(range(1, 10, 1)))')
+print(maximum(range(1, 10, 1)))
+print('print(maximum({"f", "d", "c", "d", "e"}))')
+print(maximum({"f", "d", "c", "d", "e"}))
+print('print(maximum({}))')
+print(maximum({}))
+--]]
+-- totable
+print("totable()")
+local tab = totable("abcdef")
+print(type(tab), #tab)
+each(print, tab)
+
+--[[
 print("TRANSFORMATIONS")
 print('each(print, map(function(x) return 2 * x end, range(4)))')
 each(print, map(function(x) return 2 * x end, range(4)))
@@ -74,4 +108,4 @@ local fn = function(...) return 'map', ... end
 each(print, map(fn, range(4)))
 print("INTERSPERSE")
 --each(print, intersperse("x", {"a", "b", "c", "d", "e"}))
-
+--]]

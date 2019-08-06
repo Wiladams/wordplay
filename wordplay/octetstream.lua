@@ -1,15 +1,11 @@
 --[[
     This file is a general memory stream interface.
-    The primary objective is to satisfy the needs of the 
-    truetype parser, but it can be used in general cases.
 
-    It differs from the MemoryStream object in that it can't
-    write, and it has more specific data type reading 
-    convenience calls.
+    Octetstream serves up 8-bit bytes, one at a time 
+    with a readOctet() function.  You can also read
+    multiple octets at once with readBytes().
 
-    More specifically, all of the numeric reading assumes the
-    data in the stream is formatted in 'big-endian' order.  That
-    is, the high order bytes come first.
+    
 ]]
 local ffi = require("ffi")
 local bit = require("bit")
@@ -54,9 +50,15 @@ function octetstream.new(self, data, size, position)
     return self:init(data, size, position);
 end
 
+--[[
 -- get a subrange of the stream
 -- this is an alias to the data
 -- not a copy
+    BUGBUG - Need to worry about losing the 
+    pointer reference to garbage collection.
+
+    Should probably retain a reference to it.
+--]]
 function octetstream.range(self, size, pos)
     pos = pos or self.cursor;
 
