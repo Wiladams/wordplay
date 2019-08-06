@@ -1,6 +1,6 @@
 --[[
-    A recreation of functional programming routines
-    from luafun
+    A recreation of some functional programming routines
+    from the luafun repository
     
     https://luafun.github.io/
 
@@ -16,6 +16,8 @@
     Some style things
     Want to add support for 
     optimize luajit ctype objects
+    revisit some assumptions, naming
+    implement some stuff not in luafun
 ]]
 
 

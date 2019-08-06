@@ -24,17 +24,6 @@ function exports.send (...)
     coroutine.yield(...)
 end
 
---[[
-    Generators
-]]
--- A generator that returns no values
--- convenient for when the parameters don't
--- conform, but you MUST return a valid iterator
-function exports.nil_gen()
-    return coroutine.create(function()
-        return nil
-    end)
-end
 
 --[[
     Simple iterators
@@ -56,100 +45,6 @@ function table_iter(tbl)
 end
 
 
---[[
-    PRODUCERS
-]]
-
-function exports.duplicate(...)
-    local nargs = select('#', ...)
-    local args = select(1, ...)
-    if nargs > 1 then
-        args = {...}
-    end
-
-    local function duplicate_1_gen()
-        while true do
-            send(args)
-        end
-    end
-
-    local function duplicate_table_gen()
-        while true do
-            send(unpack(args))
-        end
-    end
-    
-    if nargs <= 1 then
-        return coroutine.wrap(duplicate_1_gen)
-    end
-
-    return coroutine.wrap(duplicate_table_gen)
-end
-
-local function ones_prod()
-    return coroutine.create(function()
-        while true do
-            send(1)
-        end
-    end)
-end
-
-exports.ones = ones_prod
-
-
-function exports.range(start, stop, step)
-
-    if step == nil then
-        if stop == nil then
-            if start == 0 then
-                return coroutine.wrap(nil_gen)
-            end
-            stop = start
-            start = stop > 0 and 1 or -1
-        end
-        step = start <= stop and 1 or -1
-    end
-    
-    assert(type(start) == "number", "start must be a number")
-    assert(type(stop) == "number", "stop must be a number")
-    assert(type(step) == "number", "step must be a number")
-    assert(step ~= 0, "step must not be zero")
-
-    if step < 0 then
-        return coroutine.create(function ()
-            local i = start
-            while i >= stop do
-                send(i)
-                i = i + step;
-            end
-        end)
-    end
-
-    return coroutine.create(function ()
-        local i = start
-        while i <= stop do
-            send(i)
-            i = i + step;
-        end
-    end)
-end
-
--- produces zeroes forever
-local function zeroes_prod()
-    return coroutine.create(function()
-        while true do
-            --print("zeroes, sending")
-            send(0)
-        end
-    end)
-end
-
-exports.zeroes = zeroes_prod
-
--- an iterator that returns single values
-local function iterator_1(prod)
-
-end
 --[[
     REDUCING
 ]]
@@ -261,25 +156,6 @@ end
 --[[
     SLICING
 ]]
--- take_n
--- Consumer/Producer
-local function take_n_prod(n, prod)
-    return coroutine.create(function ()
-        local counter = 0;
-        while coroutine.status(prod) ~= "dead" do
-            counter = counter + 1
-            --print("taken_n, counter: ", counter, n)
-            if counter > n then
-                return nil
-            end
-
-            send(receive(prod))
-        end
-    end)
-end
-exports.take_n = take_n_prod
-
-
 
 -- return the 'nth' iterated value
 -- Consumer, Produce single value
@@ -305,65 +181,9 @@ end
 exports.car = exports.head
 
 
-
-
-
-
-function exports.each(func, prod)
-    if not func then return false end
-    
-    local iter = prod
-
-    if type(prod) == "string" then
-        iter = string_iter(prod)
-    elseif type(prod) == "table" then
-        iter = table_iter(prod)
-    end
-
-    local success, results = receive(prod)
-    while success and #results > 0 do
-        func(unpack(results))
-        success, results = receive(prod)
-    end
-
---[[
-    while coroutine.status(iter) ~= "dead" do
-        func(receive(prod))
-    end
---]]
-end
-
-
 --[[
     FILTERING
 ]]
-function exports.filter(predicate, srciter)
-
-    local function iterator()
-        for value in srciter do
-            if not predicate then
-                coroutine.yield(value);
-            else
-                if predicate(value) then
-                    coroutine.yield(value)
-                end
-                -- move on to the next one
-            end
-        end
-    end
-
-    local co = coroutine.create(iterator)
-    
-    return function()
-        local status, value = coroutine.resume(co)
-        if not status then
-            return nil;
-        end
-        return value;
-    end
-end
-
-exports.remove_if = exports.filter 
 
 function exports.grep(predicate, source)
     local fun = predicate
@@ -374,25 +194,4 @@ function exports.grep(predicate, source)
     return exports.filter(fun, source)
 end
 
--- a special syntax sugar to export all functions to the global table
-setmetatable(exports, {
-    __call = function(t, override)
-        for k, v in pairs(t) do
-            if rawget(_G, k) ~= nil then
-                local msg = 'function ' .. k .. ' already exists in global scope.'
-                if override then
-                    rawset(_G, k, v)
-                    print('WARNING: ' .. msg .. ' Overwritten.')
-                else
-                    print('NOTICE: ' .. msg .. ' Skipped.')
-                end
-            else
-                rawset(_G, k, v)
-            end
-        end
-    end,
-})
-
-
 return exports
-
