@@ -963,12 +963,91 @@ local function ones()
 end
 exports.ones = ones
 
--- BUGBUG
--- rands
+
+-- random number iterator
+local function rands_gen(param_x, state_x)
+    return 0, math.random(param_x[1], param_x[2])
+end
+
+local function rands_nil_gen(param, state)
+    return 0, math.random()
+end
+
+local function rands(n, m)
+    if n == nil and m == nil then
+        return wrap(rands_nil_gen, 0,0)
+    end
+
+    -- assert(type(n) == number, "invalid first arg to rands")
+    if m == nil then
+        m = n
+        n = 0
+    else
+        assert(type(m) == "number", "invalid second arg to rands")
+    end
+
+    assert(n<m, "empty interval")
+
+    return wrap(rands_gen, {n,m-1},0)
+end
+exports.rands = rands
 
 --[[
     Slicing
 ]]
+local function nth(n, gen_x, param_x, state_x)
+    if gen_x == ipairs_gen then
+        return param_x[n]
+    elseif gen_x == string_gen then
+        if n <= #param_x then
+            return string.sub(param_x, n, n)
+        else
+            return nil
+        end
+    end
+
+    for i=1, n-1, 1 do
+        state_x = gen_x(param_x, state_x)
+        if state_x == nil then
+            return nil
+        end
+    end
+
+    return returnIfNotEmpty(gen_x(param_x, state_x))
+end
+exports.nth = export1(nth)
+methods.nth = method1(nth)
+
+-- head
+local function head_call(state, ...)
+    if state == nil then
+        error("head: iterator is empty")
+        return nil
+    end
+
+    return ...
+end
+
+local function head(gen, param, state)
+    -- BUGBUG, should return nil iterator
+    -- if needed
+    return head_call(gen(param, state))
+end
+exports.head = export0(head)
+methods.head = method0(head)
+
+-- tail
+local function tail(gen, param, state)
+    state = gen(param, state)
+    if state == nil then
+        return wrap(nil_gen, nil, nil)
+    end
+    return wrap(gen, param, state)
+end
+exports.tail = export0(tail)
+methods.tail = method0(tail)
+
+--  take_n
 local function take_n_gen_x(i, state, ...)
     if state == nil then
         return nil
@@ -1007,7 +1086,6 @@ exports.take = export1(take)
 methods.take = method1(take)
 
 -- BUGBUG
--- nth
 -- take_while
 -- drop_n
 -- drop_while

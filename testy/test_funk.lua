@@ -31,8 +31,17 @@ each(print, iter({'each', 'of','these','will','print'}))
 --    print(it)
 --end
 
+print("GENERATORS")
 print("RANGE")
 each(print, range(1,10))
+
+print("RANDOM")
+print('each(print, take(10, rands(10, 20)))')
+each(print, take(10, rands(10, 20)))
+print('each(print, take(5, rands(10)))')
+each(print, take(5, rands(10)))
+print('each(print, take(5, rands()))')
+each(print, take(5, rands()))
 
 print("INDEX")
 print(index(2, range(0)))
@@ -122,7 +131,10 @@ print("INTERSPERSE")
 each(print, intersperse("x", {"a", "b", "c", "d", "e"}))
 
 
-
+print("SLICING")
+print('print(head(enumerate({"a", "b"})))')
+print(head(enumerate({"a", "b"})))
+print(enumerate({"a", "b"}):head())
 
 
 print("COMPOSITIONS")
