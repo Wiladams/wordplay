@@ -23,9 +23,12 @@
 local floor, ceil, pow = math.floor, math.ceil, math.pow
 local unpack = rawget(table, "unpack") or unpack
 
+-- These are used to expose the function interface of
+-- the module
 local exports = {}
 
-
+-- These are used to expose the object interface of
+-- the module
 local methods = {}
 
 exports.operator = {}
@@ -85,6 +88,9 @@ function exports.operator.land(a,b) return a and b end
 function exports.operator.lor(a,b) return a or b end
 function exports.operator.lnot(a) return not a end
 function exports.operator.truth(a) return not not a end
+
+--exports.operator = operator
+methods.operator = exports.operator
 
 --[[
     Utility Functions
@@ -1088,6 +1094,20 @@ methods.take = method1(take)
 -- BUGBUG
 -- take_while
 -- drop_n
+local function drop_n(n, gen, param, state)
+    -- assert(n>= 0, "invalid first argument to drop_n")
+    local i
+    for i=1, n, 1 do 
+        state = gen(param, state)
+        if state == nil then
+            return wrap(nil_gen, nil, nil)
+        end
+    end
+    return wrap(gen, param, state)
+end
+exports.drop_n = export1(drop_n)
+methods.drop_n = method1(drop_n)
+
 -- drop_while
 -- drop
 -- split
