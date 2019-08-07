@@ -24,6 +24,8 @@ local floor, ceil, pow = math.floor, math.ceil, math.pow
 local unpack = rawget(table, "unpack") or unpack
 
 local exports = {}
+
+
 local methods = {}
 
 exports.operator = {}
@@ -43,6 +45,9 @@ function exports.operator.gt(a,b) return a > b end
     Arithmetic Operators
 --]]
 function exports.operator.add(a,b) return a + b end
+function exports.operator.sub(a,b) return a - b end
+function exports.operator.mul(a,b) return a * b end
+
 function exports.operator.truediv(a,b) return a / b end
 exports.operator.div = exports.operator.truediv
 function exports.operator.floordiv(a,b) return floor(a/b) end
@@ -55,10 +60,13 @@ function exports.operator.intdiv(a,b)
     end
 end
 function exports.operator.mod(a,b) return a % b end
+function exports.operator.exp(a, b) return a^b end
+function exports.operator.pow(a,b) return math.pow(a,b) end
+
+-- unary minus
 function exports.operator.neg(a) return -a end
 exports.operator.unm = exports.operator.neg
-function exports.operator.pow(a,b) return math.pow(a,b) end
-function exports.operator.sub(a,b) return a - b end
+
 
 
 --[[
@@ -108,7 +116,7 @@ local function deepCopy(orig)
     if otype == "table" then
         copy = {}
         for okey, ovalue in next, orig, nil do
-            copy[deepcopy(okey)] = deepcopy(ovalue)
+            copy[deepCopy(okey)] = deepCopy(ovalue)
         end
     else
         -- kind of cheap bailout.  The orig
@@ -222,8 +230,8 @@ local function string_gen(param, state)
         return nil;
     end
     local r = string.sub(param, state, state)
+
     return state, r
-    --return state + 1, string.sub(param, state, state)
 end
 
 -- simple hack to get the ipairs generator function
@@ -505,6 +513,25 @@ exports.isNullIterator = export0(isNullIterator)
 methods.isNullIterator = method0(isNullIterator)
 
 -- isPrefixOf
+local function isPrefixOf(iter_x, iter_y)
+    local gen_x, param_x, state_x = iter(iter_x)
+    local gen_y, param_y, state_y = iter(iter_y)
+
+    local r_x, r_y
+    for i=1,10,1 do
+        state_x, r_x = gen_x(param_x, state_x)
+        state_y, r_y = gen_y(param_y, state_y)
+        if state_x == nil then
+            return true
+        end
+
+        if state_y == nil or r_x ~= r_y then
+            return false
+        end
+    end
+end
+exports.isPrefixOf = isPrefixOf
+methods.isPrefixOf = isPrefixOf
 
 -- all
 local function all(fn, gen_x, param_x, state_x)
@@ -655,15 +682,35 @@ local toTable = function(gen, param, state)
         if state == nil then
             break;
         end
-        print('val: ', val)
         table.insert(tab, val)
     end
 
     return tab
 end
-
 exports.totable = export0(toTable)
 methods.totable = method0(toTable)
+
+--[[
+    tomap 
+
+    Create a dictionary from key/value input
+]]
+local function tomap(gen, param, state)
+    local tab = {}
+    local key, val
+    while true do
+        state, key, val = gen(param, state)
+        if state == nil then
+            break;
+        end
+        -- maybe do rawset?
+        tab[key] = val
+    end
+    
+    return tab
+end
+exports.tomap = export0(tomap)
+methods.tomap = method0(tomap)
 
 --[[
     Transformations
@@ -699,10 +746,159 @@ end
 exports.enumerate = export0(enumerate)
 methods.enumerate = method0(enumerate)
 
+local function intersperse_call(i, state_x, ...)
+    if state_x == nil then
+        return nil
+    end
+    return {i+1, state_x}, ...
+end
+
+local function intersperse_gen(param, state)
+    local x, gen_x, param_x = param[1], param[2], param[3]
+    local i, state_x = state[1], state[2]
+    if i % 2 == 1 then
+        return {i+1, state_x}, x 
+    else
+        return intersperse_call(i, gen_x(param_x, state_x))
+    end
+end
+
+local function intersperse(x, gen, param, state)
+    return wrap(intersperse_gen, {x, gen, param}, {0, state})
+end
+exports.intersperse = export1(intersperse)
+methods.intersperse = method1(intersperse)
+
 
 --[[
     Compositions
 ]]
+-- zip
+local function zip_gen_r(param, state, state_new, ...)
+    if #state_new == #param / 2 then
+        return state_new, ...
+    end
+
+    local i = #state_new + 1
+    local gen_x, param_x = param[2*i-1], param[2*i]
+    local state_x, r = gen_x(param_x, state[i])
+    if state_x == nil then
+        return nil 
+    end
+    table.insert(state_new, state_x)
+
+    return zip_gen_r(param, state, state_new, r, ...)
+end
+
+local function zip_gen(param, state)
+    return zip_gen_r(param, state, {})
+end
+
+--[[
+    If a wrapped iterator has been passed, we need to skip
+    the last two states.
+
+    This is a hack for zip and chain
+]]
+local function numargs(...)
+    local n = select('#', ...)
+    if n >= 3 then
+        -- fix last argument
+        local it = select(n-2, ...)
+        if type(it) == "table" and getmetatable(it) == iterator_mt and
+            it.param == select(n-1, ...) and it.state == select(n, ...) then
+                return n - 2
+        end
+    end
+    return n
+end
+
+local function zip(...)
+    local n = numargs(...)
+    if n == 0 then
+        return wrap(nil_gen, nil, nil)
+    end
+
+    local param = {[2*n]=0}
+    local state = {[n]=0}
+
+    local i, gen_x, param_x, state_x
+    for i=1,n,1 do
+        local it = select(n-i+1, ...)
+        gen_x, param_x, state_x = rawiter(it)
+        param[2*i-1] = gen_x
+        param[2*i] = param_x
+        state[i] = state_x
+    end
+    return wrap(zip_gen, param, state)
+end
+exports.zip = zip
+methods.zip = zip
+
+-- cycle
+local function cycle_gen_call(param, state_x, ...)
+    if state_x == nil then
+        local gen_x, param_x, state_x0 = param[1], param[2], param[3]
+        return gen_x(param_x, deepCopy(state_x0))
+    end
+    return state_x, ...
+end
+
+local function cycle_gen(param, state_x)
+    local gen_x, param_x, state_x0 = param[1], param[2], param[3]
+    return cycle_gen_call(param, gen_x(param_x, state_x))
+end
+
+local function cycle(gen, param, state)
+    return wrap(cycle_gen, {gen, param, state}, deepCopy(state))
+end
+exports.cycle = export0(cycle)
+methods.cycle = method0(cycle)
+
+
+-- chain
+local chain_gen_r1
+local chain_gen_r2 = function(param, state, state_x, ...)
+    if state_x == nil then
+        local i = state[1]
+        i = i + 1
+        if param[3*i-1] == nil then
+            return nil
+        end
+        local state_x = param[3*i]
+        return chain_gen_r1(param, {i, state_x})
+    end
+
+    return {state[1], state_x}, ...
+end
+
+chain_gen_r1 = function(param, state)
+    local i, state_x = state[1], state[2]
+    local gen_x, param_x = param[3*i-2], param[3*i-1]
+    return chain_gen_r2(param, state, gen_x(param_x, state[2]))
+end
+
+local function chain(...)
+    local n = numargs(...)
+--print("chain, numargs: ", n)
+    if n == 0 then 
+        return wrap(nil_gen, nil, nil)
+    end
+    
+    local param = {[3*n]=0}
+    local i, gen_x, param_x, state_x
+    for i=1,n,1 do 
+        local elem = select(i,...)
+        gen_x, param_x, state_x = iter(elem)
+        param[3*i - 2] = gen_x
+        param[3*i - 1] = param_x
+        param[3*i] = state_x
+    end
+
+    return wrap(chain_gen_r1, param, {1, param[3]})
+end
+exports.chain = chain
+methods.chain = chain
 
 --[[
     Iterators
@@ -767,15 +963,18 @@ local function ones()
 end
 exports.ones = ones
 
+-- BUGBUG
+-- rands
 
 --[[
     Slicing
 ]]
-local function take_n_gen_x(i, state_x, ...)
-    if state_x == nil then
+local function take_n_gen_x(i, state, ...)
+    if state == nil then
         return nil
     end
-    return {i, state_x}, ...
+
+    return {i, state}, ...
 end
 
 local function take_n_gen(param, state)
@@ -807,6 +1006,26 @@ end
 exports.take = export1(take)
 methods.take = method1(take)
 
+-- BUGBUG
+-- nth
+-- take_while
+-- drop_n
+-- drop_while
+-- drop
+-- split
+
+
+--[[
+    A bit of trickery to allow the user of this module to turn
+    all the functions into globals.
+
+    As the exports table is returned, if we set a metatable on 
+    that table, and implement the '__call()' metamethod, the
+    table looks like a functor:
+
+    local funk = require("funk")
+    funk()
+]]
 setmetatable(exports, {
     __call = function(self, tbl)
         tbl = tbl or _G
@@ -817,5 +1036,12 @@ setmetatable(exports, {
 
         return self
     end;
+
+    __index = {
+        _VERSION     = {1,0};
+        _URL         = 'http://github.com/wiladams/wordplay';
+        _LICENSE     = 'MIT';
+        _DESCRIPTION = 'some functional programming in Lua';
+    }
 })
 return exports

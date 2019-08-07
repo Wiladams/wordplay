@@ -1,7 +1,14 @@
 package.path = "../?.lua;"..package.path
 
 local funk = require("wordplay.funk")()
---[[
+
+print("FUNK EXAMPLES")
+print("version: ", funk._VERSION[1], funk._VERSION[2])
+print("URL: ", funk._URL)
+print("LICENSE: ", funk._LICENSE)
+print("DESCRIPTION: ", funk._DESCRIPTION)
+
+---[=[
 print("STRING")
 for _it, c in iter("Hello Funk.") do
     print(c)
@@ -93,19 +100,52 @@ print('print(maximum({"f", "d", "c", "d", "e"}))')
 print(maximum({"f", "d", "c", "d", "e"}))
 print('print(maximum({}))')
 print(maximum({}))
---]]
+
 -- totable
 print("totable()")
 local tab = totable("abcdef")
 print(type(tab), #tab)
 each(print, tab)
 
---[[
+print("MAP - tomap")
+local tab = tomap(zip(range(1, 7), 'abcdef'))
+print(type(tab), #tab)
+each(print, iter(tab))
+
+
 print("TRANSFORMATIONS")
 print('each(print, map(function(x) return 2 * x end, range(4)))')
 each(print, map(function(x) return 2 * x end, range(4)))
 local fn = function(...) return 'map', ... end
 each(print, map(fn, range(4)))
 print("INTERSPERSE")
---each(print, intersperse("x", {"a", "b", "c", "d", "e"}))
---]]
+each(print, intersperse("x", {"a", "b", "c", "d", "e"}))
+
+
+
+
+
+print("COMPOSITIONS")
+
+print('each(print, take(15, cycle(range(5))))')
+each(print, take(15, cycle(range(5))))
+print('each(print, take(15, cycle(zip(range(5), {"a", "b", "c", "d", "e"}))))')
+each(print, take(15, cycle(zip(range(5), {"a", "b", "c", "d", "e"}))))
+
+
+
+print('each(print, chain(range(2), {"a", "b", "c"}, {"one", "two", "three"}))')
+each(print, chain(range(2), {"a", "b", "c"}, {"one", "two", "three"}))
+print('each(print, take(15, cycle(chain(enumerate({"a", "b", "c"}),{"one", "two", "three"}))))')
+each(print, take(15, cycle(chain(enumerate({"a", "b", "c"}),{"one", "two", "three"}))))
+
+
+-- generate fibonacci series (1..25)(196417)
+print("fibonacci(1..25)")
+local function fib(n)
+    return n < 2 and n or fib(n-1)+fib(n-2)
+end
+
+print(range(25):map(fib):sum())
+
+--]=]
