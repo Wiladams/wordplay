@@ -1,6 +1,9 @@
 package.path = "../?.lua;"..package.path
 
-local funk = require("wordplay.funk")()
+local testns = require("namespace")()
+local funk = require("wordplay.funk")(testns)
+
+print(filter, _G.filter)
 
 print("FUNK EXAMPLES")
 print("version: ", funk._VERSION[1], funk._VERSION[2])

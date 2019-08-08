@@ -1198,4 +1198,5 @@ setmetatable(exports, {
         _DESCRIPTION = 'some functional programming in Lua';
     }
 })
+
 return exports
