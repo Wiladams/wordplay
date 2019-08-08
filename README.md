@@ -48,6 +48,7 @@ Functions Implemented
 * head
 * tail
 * take_n
+* take_while
 * take
 * drop_n
 * drop_while

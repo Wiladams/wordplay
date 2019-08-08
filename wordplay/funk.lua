@@ -1080,6 +1080,21 @@ end
 exports.take_n = export1(take_n)
 methods.take_n = method1(take_n)
 
+local function take_while_gen_x(fn, state_x, ...)
+    if state_x == nil or not fn(...) then
+        return nil
+    end
+    return state_x, ...
+end
+
+local function take_while(fn, gen, param, state)
+    -- assert(type(fn) == "function", "invalid first argument")
+    return wrap(take_while_gen, {fn, gen, param}, state)
+end
+exports.take_while = export1(take_while)
+methods.take_while = method1(take_while)
+
+
 local function take(n_or_fun, gen, param, state)
     if type(n_or_fun) == "number" then
         return take_n(n_or_fun, gen, param, state)
@@ -1093,6 +1108,7 @@ methods.take = method1(take)
 
 -- BUGBUG
 -- take_while
+
 -- drop_n
 local function drop_n(n, gen, param, state)
     -- assert(n>= 0, "invalid first argument to drop_n")
