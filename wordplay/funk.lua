@@ -1080,6 +1080,7 @@ end
 exports.take_n = export1(take_n)
 methods.take_n = method1(take_n)
 
+-- take_while
 local function take_while_gen_x(fn, state_x, ...)
     if state_x == nil or not fn(...) then
         return nil
@@ -1106,8 +1107,8 @@ end
 exports.take = export1(take)
 methods.take = method1(take)
 
--- BUGBUG
--- take_while
+
+
 
 -- drop_n
 local function drop_n(n, gen, param, state)
