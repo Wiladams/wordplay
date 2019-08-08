@@ -50,11 +50,11 @@ Functions Implemented
 * take_n
 * take
 * drop_n
-
-Not Yet Implemented (NYI)
 * drop_while
 * drop
 * split
+
+
 
 
 

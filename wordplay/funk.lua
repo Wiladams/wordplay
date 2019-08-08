@@ -1109,9 +1109,48 @@ exports.drop_n = export1(drop_n)
 methods.drop_n = method1(drop_n)
 
 -- drop_while
--- drop
--- split
+local function drop_while_x(fn, state_x, ...)
+    if state_x == nil or not fn(...) then
+        return state_x, false
+    end
+    return state_x, true, ...
+end
 
+local function drop_while(fn, gen_x, param_x, state_x)
+    -- assert
+    local cont, state_x_prev
+    repeat
+        state_x_prev = deepCopy(state_x)
+        state_x, cont = drop_while_x(fn, gen_x(param_x, state_x))
+    until not cont
+
+    if state_x == nil then
+        return wrap(nil_gen, nil, nil)
+    end
+
+    return wrap(gen_x, param_x, state_x_prev)
+end
+exports.drop_while = export1(drop_while)
+methods.drop_while = method1(drop_while)
+
+-- drop
+local function drop(n_or_fun, gen_x, param_x, state_x)
+    if type(n_or_fun) == "number" then
+        return drop_n(n_or_fun, gen_x, param_x, state_x)
+    else
+        return drop_while(n_or_fun, gen_x, param_x, state_x)
+    end
+end
+exports.drop = export1(drop)
+methods.drop = method1(drop)
+
+-- split
+local function split(n_or_fun, gen_x, param_x, state_x)
+    return take(n_or_fun, gen_x, param_x, state_x),
+        drop(n_or_fun, gen_x, param_x, state_x)
+end
+exports.split = export1(split)
+methods.split = method1(split)
 
 --[[
     A bit of trickery to allow the user of this module to turn
