@@ -62,10 +62,27 @@ Functions Implemented
 
 cctype - some common character categorization functions
 
+* isalnum
+* isalpha
+* isascii
+* isbyte
+* iscntrl
+* isdigit
+* isgraph
+* islower
+* isprint
+* ispunct
+* isspace
+* isupper
+* isxdigit
+* tolower
+* toupper
+
 enum - convenience two way dictionary
 
+mmap - memory mapped file handling
 
-textreader - can read 'lines' based on common end of line delimeters
+textreader - can read 'lines' based on common end of line delimeters (CR/LF, LF)
 
 wordplay - some experiments in iterators
 
@@ -78,8 +95,6 @@ gcode - gcode_repl, gcode_rewriter, gcode_scanner
 
 lox - lox_scanner, lox_lexer, lox_bnf
 
-mmap - memory mapped file handling
-
 spairs - sorting dictionary
 
 
@@ -89,3 +104,5 @@ Resources
 Sample files
 
 u_ex171118-sample.txt   https://www.site-logfile-explorer.com/logfile-samples/iis.aspx
+
+w_spok_1998.txt

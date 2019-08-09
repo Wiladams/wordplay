@@ -38,32 +38,6 @@ end
 --]]
 
 
-function exports.filter(tformer, gen, params, state)
-    --print("filter: ", tformer, gen, params, state)
-    local function filter_gen(params, state)
-        local srcgen = params.srcgen;
-        local srcparams = params.srcparams;
-        local item
-
-        while true do
-            state, item = srcgen(srcparams, state)
-            if state == nil then
-                break;
-            end
-
-            local result = tformer(item)
-            --print("filter_gen: ", state, item, result)
-            if result then
-                return state, result;
-            end
-        end
-
-        -- if we get to here, we've run out of stuff
-        return nil;
-    end
-
-    return filter_gen, {srcgen = gen, srcparams = params}, state
-end
 
 
 -- iterates things that are quoted
@@ -117,42 +91,6 @@ function exports.quote_iter(srcgen, srcparams, srcstate)
 
     return quote_gen, {srcparams = srcparams, srcgen = srcgen}, srcstate
 end
-
---[[
- word_iter
-    Consume an iterator of bytes, produce an iteration 
-    of lua strings
- --]]
-
-function exports.word_iter(prod)
-    local bufferSize = 1024
-    local buffer = ffi.new("uint8_t[?]", 1024)
-
-    return coroutine.wrap(function ()
-        local offset = 0;
-        for c in prod do
-            if not isspace(c) then
-                buffer[offset] = c;
-                offset = offset + 1
-            else
-                if offset > 0 then -- eliminate blank strings
-                local str = ffi.string(buffer, offset)
-                send(str)
-                end
-                offset = 0
-            end
-        end
-
-        -- trailing edge
-        -- no more characters coming in, but we were
-        -- working on a word
-        if offset > 0 then
-            local str = ffi.string(buffer, offset)
-            send(str)
-        end
-    end)
-end
-
 
 
 --[[
