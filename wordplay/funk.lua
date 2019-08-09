@@ -719,6 +719,39 @@ exports.tomap = export0(tomap)
 methods.tomap = method0(tomap)
 
 --[[
+    unique
+
+    A reducer that takes the parameters, assumes they
+    are values, and returns a table of only those unique values.
+
+    This should work whenever the values of the generator
+    can serve as keys in a lua table.
+
+    This is similar to totable(), except it only returns the 
+    unique values.
+]]
+local function unique(gen, param, state)
+    local tab = {} 
+    local val
+
+    while true do
+        state, val = gen(param, state)
+        if state == nil then
+            break;
+        end
+        if not tab[val] then
+            tab[val] = 1
+        else
+            tab[val] = tab[val] + 1
+        end
+    end
+
+    return tab
+end
+exports.unique = export0(unique)
+methods.unique = method0(unique)
+
+--[[
     Transformations
 ]]
 local function map_gen(param, state)

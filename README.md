@@ -78,6 +78,12 @@ cctype - some common character categorization functions
 * tolower
 * toupper
 
+New
+---
+
+* unique
+
+
 enum - convenience two way dictionary
 
 mmap - memory mapped file handling
