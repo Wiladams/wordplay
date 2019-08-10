@@ -62,7 +62,7 @@ local function field_iter_gen(param, state)
     return state+1, value
 end
 
-local function field_iter(bs, delim)
+local function field_iter(delim, bs)
     return field_iter_gen, {data=bs.data, size=bs.size, delimeter=delim or string.byte(',')}, bs:tell()
 end
 

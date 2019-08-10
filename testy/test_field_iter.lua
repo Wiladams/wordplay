@@ -16,12 +16,21 @@ local function notNumber(x) return not tonumber(x) end
 
 
 
--- input string
---local line = "this, is a bunch of fields, in a , line,,,"
-local line = "A,'a little something',in between,O"
 
--- unique words
-each(print, enumerate(field_iter(octetstream(line))))
---each(print, unique(map(string.upper,filter(notNumber, filter(notPunct, word_iter(bs))))))
+local line = "this, is a bunch of fields, in a , line,,,"
+print(line)
+each(print, enumerate(field_iter(string.byte',', octetstream(line))))
+
+local line = "A,'a little something',in between,O"
+print(line)
+each(print, enumerate(field_iter(string.byte',', octetstream(line))))
+
+local line = "a\tb\tc\td"
+print(line)
+each(print, enumerate(field_iter(string.byte'\t', octetstream(line))))
+
+local line = "once|upon|a|time|in|America"
+print(line)
+each(print, enumerate(field_iter(string.byte'|', octetstream(line))))
 
 
