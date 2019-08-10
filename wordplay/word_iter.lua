@@ -13,7 +13,7 @@ local isspace = cctype.isspace
  --]]
 local function segment_iter_gen(param, state)
     -- check if end of data
-    if param.size - state < 1 then
+    if param.size - state < 0 then
         return nil;
     end
 
