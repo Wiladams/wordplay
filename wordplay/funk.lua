@@ -193,37 +193,7 @@ local function nil_gen(param, state)
     return nil;
 end
 
---[[
-    range_gen()
 
-    generate a range of numbers
-
-    param[1] - stop
-    param[2] - step
-
---]]
-
-local function range_gen(param, state)
-    local stop, step = param[1], param[2]
-    local state = state + step
-    if state > stop then
-        return nil
-    end
-
-    return state, state
-end
-
--- same as range_gen, but going negative
-local function range_rev_gen(param, state)
-    local stop, step = param[1], param[2]
-    local state = state + step
-
-    if state < stop then
-        return nil;
-    end
-
-    return state, state
-end
 
 --[[
     generate characters from a lua string one at a 
@@ -311,6 +281,9 @@ local function method2(fn)
         return fn(arg1, arg2, self.gen, self.param, self.state)
     end
 end
+exports.method0 = method0
+exports.method1 = method1
+exports.method2 = method2
 
 
 local function export0(fn)
@@ -330,6 +303,9 @@ local function export2(fn)
         return fn(arg1, arg2, rawiter(gen, param,state))
     end
 end
+exports.export0 = export0
+exports.export1 = export1
+exports.export2 = export2
 
 local function each(fn, gen, param, state)
     repeat
@@ -718,38 +694,7 @@ end
 exports.tomap = export0(tomap)
 methods.tomap = method0(tomap)
 
---[[
-    unique
 
-    A reducer that takes the parameters, assumes they
-    are values, and returns a table of only those unique values.
-
-    This should work whenever the values of the generator
-    can serve as keys in a lua table.
-
-    This is similar to totable(), except it only returns the 
-    unique values.
-]]
-local function unique(gen, param, state)
-    local tab = {} 
-    local val
-
-    while true do
-        state, val = gen(param, state)
-        if state == nil then
-            break;
-        end
-        if not tab[val] then
-            tab[val] = 1
-        else
-            tab[val] = tab[val] + 1
-        end
-    end
-
-    return tab
-end
-exports.unique = export0(unique)
-methods.unique = method0(unique)
 
 --[[
     Transformations
@@ -942,6 +887,38 @@ methods.chain = chain
 --[[
     Iterators
 ]]
+--[[
+    range_gen()
+
+    generate a range of numbers
+
+    param[1] - stop
+    param[2] - step
+
+--]]
+
+local function range_gen(param, state)
+    local stop, step = param[1], param[2]
+    local state = state + step
+    if state > stop then
+        return nil
+    end
+
+    return state, state
+end
+
+-- same as range_gen, but going negative
+local function range_rev_gen(param, state)
+    local stop, step = param[1], param[2]
+    local state = state + step
+
+    if state < stop then
+        return nil;
+    end
+
+    return state, state
+end
+
 local function range(start, stop, step)
     if step == nil then
         if stop == nil then
@@ -1119,6 +1096,11 @@ local function take_while_gen_x(fn, state_x, ...)
         return nil
     end
     return state_x, ...
+end
+
+local function take_while_gen(param, state_x)
+    local fn, gen_x, param_x = param[1], param[2], param[3]
+    return take_while_gen_x(fn, gen_x(param_x, state_x))
 end
 
 local function take_while(fn, gen, param, state)

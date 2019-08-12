@@ -4,6 +4,8 @@ local mmap = require("wordplay.mmap")
 local octetstream = require("wordplay.octetstream")
 local word_iter = require("wordplay.word_iter")
 local funk = require("wordplay.funk")()
+local finq = require("wordplay.finq")()
+
 local cctype = require("wordplay.cctype")
 local ispunct = cctype.ispunct
 
