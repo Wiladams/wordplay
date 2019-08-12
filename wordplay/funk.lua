@@ -19,6 +19,7 @@
     implement some stuff not in luafun
 ]]
 
+local ffi = require("ffi")
 
 local floor, ceil, pow = math.floor, math.ceil, math.pow
 local unpack = rawget(table, "unpack") or unpack
@@ -193,7 +194,32 @@ local function nil_gen(param, state)
     return nil;
 end
 
+--[[
+    generate elements from anything that has array
+    syntax
 
+    param -> {
+            data = thingthatrespondsto[], 
+            offset = offset from whence to start
+            size=numberOfElements,
+        }
+    state -> index into array
+
+    nothing is assumed about whether the array starts at 
+    0 or 1.  The param.offset simply tells us where to start
+
+    And the param.size tells us how many things there are
+    so, the end == offset+size
+]]
+local function array_gen(param, state)
+    -- if we're at the end of the data, return nil
+    if state >= param.offset + param.size then
+        return nil
+    end
+
+    return state+1, param.data[param.offset+state]
+end
+exports.array_gen = array_gen
 
 --[[
     generate characters from a lua string one at a 
@@ -233,6 +259,13 @@ local function rawiter(obj, param, state)
         end
 
         return string_gen, obj, 0
+    elseif type(obj) == "cdata" then
+        local kindStr = tostring(ffi.typeof(obj))
+        if not kindStr:match('*') and not kindStr:match('[') then
+            return nil_gen, nil, nil
+        end
+
+        return array_gen, {data = obj, offset=0,size=ffi.sizeof(obj)}, 0
     elseif type(obj) == "function" then
         return obj, param, state
     elseif type(obj) == "table" then
