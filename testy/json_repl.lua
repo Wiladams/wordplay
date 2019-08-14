@@ -8,14 +8,6 @@ local mmap = require("wordplay.mmap")
 local function run(bs)
     local xs = JSONScanner:new(bs)
     for state, lexeme in xs:tokens() do
-        -- if we want to convert comments to parenthesized
-        -- ones
-        --[[
-        if lexeme.Kind == 40  then  -- comment
-            print(string.format("(%s)",lexeme.lexeme))
-        end
-        --]]
-        
         print(state, lexeme)
     end
 end

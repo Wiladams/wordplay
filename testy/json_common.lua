@@ -2,12 +2,14 @@ local enum = require("wordplay.enum")
 
 local TokenType = enum {                                   
     -- Single-character tokens.                      
-    [0] = "LEFT_PAREN", -- (
+    [0] = 
+    "LEFT_PAREN",       -- (
     "RIGHT_PAREN",      -- )
     "LEFT_BRACKET",     -- [
     "RIGHT_BRACKET",    -- ]
     "LEFT_BRACE",       -- {
     "RIGHT_BRACE",      -- }
+    "NULL",
 
     [10] =
     "COLON",        -- :
@@ -17,22 +19,9 @@ local TokenType = enum {
     "PERCENT",      -- %
     "POUND",        -- #
     "PLUS",         -- +
-    "SEMICOLON",    -- ;
     "SLASH",        -- /
     "STAR",         -- *
     "QUESTION",     -- ?
-
-    -- One or two character tokens.
-    -- [11]
-    [30] = 
-    "BANG",         --  !
-    "BANG_EQUAL",   -- !=                        
-    "EQUAL",        -- =
-    "EQUAL_EQUAL",  -- ==                        
-    "GREATER",      -- >
-    "GREATER_EQUAL",-- >=                      
-    "LESS",         -- <
-    "LESS_EQUAL",   -- <=                         
 
     -- Literals.                                     
     [40] =
@@ -43,14 +32,17 @@ local TokenType = enum {
     "STRING", 
     "TEXT",
     "SPACE",
+    "INTEGER",
+    "DOUBLE",
     "NUMBER",
-    "TRUE",
-    "FALSE",
+    "BOOL",
+
 }
 
 local Token_mt = {
     __tostring = function(self)
-        return string.format("%s %s %s", TokenType[self.Kind], self.lexeme, self.literal)
+        print("__tostring, Kind: ", self.Kind, TokenType[self.Kind])
+        return string.format("'%s' %s %s", TokenType[self.Kind], self.lexeme, self.literal)
     end;
 }
 local function Token(obj)
