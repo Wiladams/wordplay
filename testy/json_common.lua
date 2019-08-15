@@ -2,7 +2,8 @@ local enum = require("wordplay.enum")
 
 local TokenType = enum {                                   
     -- Single-character tokens.                      
-    [0] = 
+    -- matched sets
+    [1] = 
     "LEFT_PAREN",       -- (
     "RIGHT_PAREN",      -- )
     "LEFT_BRACKET",     -- [
@@ -11,7 +12,7 @@ local TokenType = enum {
     "RIGHT_BRACE",      -- }
     "NULL",
 
-    [10] =
+    -- single characters
     "COLON",        -- :
     "COMMA",        -- ,
     "DOT",          -- .
@@ -23,8 +24,7 @@ local TokenType = enum {
     "STAR",         -- *
     "QUESTION",     -- ?
 
-    -- Literals.                                     
-    [40] =
+    -- objects                                     
     "OBJECT",
     "ARRAY",
     "COMMENT",
@@ -36,12 +36,11 @@ local TokenType = enum {
     "DOUBLE",
     "NUMBER",
     "BOOL",
-
 }
 
 local Token_mt = {
     __tostring = function(self)
-        print("__tostring, Kind: ", self.Kind, TokenType[self.Kind])
+        --print("__tostring, Kind: ", self.Kind, TokenType[self.Kind])
         return string.format("'%s' %s %s", TokenType[self.Kind], self.lexeme, self.literal)
     end;
 }

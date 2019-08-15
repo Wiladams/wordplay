@@ -93,17 +93,11 @@ end
 
 -- largely ignoring whitespace
 lexemeMap[B' '] = function(bs) end
---    return (Token{Kind = TokenType.SPACE, lexeme=' ', literal='', line=bs:tell()})
---end
-
 lexemeMap[B'\r'] = function(bs) end
 lexemeMap[B'\t'] = function(bs) end
-lexemeMap[B'\n'] = function(bs)
-    --bs:incrementLineCount();
-end
+lexemeMap[B'\n'] = function(bs) end
 
 -- string literal
-
 lexemeMap[B'"'] = function(bs)
     local starting = bs:tell()
     local startPtr = bs:getPositionPointer();
@@ -133,12 +127,6 @@ lexemeMap[B'"'] = function(bs)
 
     -- return the string literal
     return (Token{Kind = TokenType.STRING, lexeme='', literal=value, line=bs:tell()})
-end
-
-
-
-lexemeMap[B'/'] = function(bs) 
-    return (Token{Kind = TokenType.SLASH, lexeme='/', literal='', line=bs:tell()}); 
 end
 
 
@@ -177,7 +165,6 @@ local function lex_number(bs)
     -- return the number literal
     --return (Token{Kind = TokenType.NUMBER, lexeme='', literal=value, line=bs:getLine()})
     return (Token{Kind = TokenType.NUMBER, lexeme='', literal=value, line=starting})
-
 end
 
 -- scan identifiers
