@@ -99,15 +99,20 @@ local function command_gen(param, state)
                 end
 
                 -- get into state of reading a member
-                return {STATES.BEGIN_MEMBER, state_x}, command{kind=STATES.BEGIN_FIELD, name =fieldName}
+                return {STATES.BEGIN_MEMBER, state_x}, command{kind=STATES.BEGIN_MEMBER, name =fieldName}
             end
         elseif state == STATES.BEGIN_MEMBER then
             -- fields can be of various types
             -- string, number, null, array, object
             -- there may be a trailing ','
-            print("BEGIN MEMBER: ", value)
+            --print("BEGIN MEMBER: ", value)
             if value.kind == TokenType.STRING then
+                -- nextstate = statestack:pop()
                 return {STATES.END_MEMBER, state_x}, command{kind=STATES.END_MEMBER, value =value.literal}
+            end
+        elseif state == STATES.BEGIN_ARRAY then
+            if value.kind == TokenType.RIGHT_BRACKET then
+                return {STATES.END_ARRAY, state_x}, command{kind=STATES.END_ARRAY}
             end
         end
 
