@@ -10,7 +10,7 @@ local TokenType = enum {
     "RIGHT_BRACKET",    -- ]
     "LEFT_BRACE",       -- {
     "RIGHT_BRACE",      -- }
-    "NULL",
+
 
     -- single characters
     "COLON",        -- :
@@ -24,24 +24,26 @@ local TokenType = enum {
     "STAR",         -- *
     "QUESTION",     -- ?
 
-    -- objects                                     
+
+
+    -- values                                     
     "OBJECT",
     "ARRAY",
-    "COMMENT",
-    "IDENTIFIER", 
     "STRING", 
-    "TEXT",
-    "SPACE",
-    "INTEGER",
-    "DOUBLE",
     "NUMBER",
-    "BOOL",
+
+    "TEXT",
+    
+    -- identifiers
+    "null",
+    "false",
+    "true",
 }
 
 local Token_mt = {
     __tostring = function(self)
         --print("__tostring, Kind: ", self.Kind, TokenType[self.Kind])
-        return string.format("'%s' %s %s", TokenType[self.Kind], self.lexeme, self.literal)
+        return string.format("'%s' %s %s", TokenType[self.kind], self.lexeme, self.literal)
     end;
 }
 local function Token(obj)

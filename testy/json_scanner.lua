@@ -68,27 +68,27 @@ end
 local lexemeMap = {}
 
 lexemeMap[B'{'] = function(bs)
-    return (Token{Kind = TokenType.LEFT_BRACE, lexeme='{', literal='', line=bs:tell()}); 
+    return (Token{kind = TokenType.LEFT_BRACE, lexeme='{', literal='', line=bs:tell()}); 
 end
 
 lexemeMap[B'}'] = function(bs)
-    return (Token{Kind = TokenType.RIGHT_BRACE, lexeme='}', literal='', line=bs:tell()}); 
+    return (Token{kind = TokenType.RIGHT_BRACE, lexeme='}', literal='', line=bs:tell()}); 
 end
 
 lexemeMap[B'['] = function(bs)
-    return Token{Kind = TokenType.LEFT_BRACKET, lexeme='[', literal='', line=bs:tell()}; 
+    return Token{kind = TokenType.LEFT_BRACKET, lexeme='[', literal='', line=bs:tell()}; 
 end
 
 lexemeMap[B']'] = function(bs) 
-    return (Token{Kind = TokenType.RIGHT_BRACKET, lexeme=']', literal='', line=bs:tell()}); 
+    return (Token{kind = TokenType.RIGHT_BRACKET, lexeme=']', literal='', line=bs:tell()}); 
 end
 
 lexemeMap[B':'] = function(bs) 
-    return (Token{Kind = TokenType.COLON, lexeme=':', literal='', line=bs:tell()}); 
+    return (Token{kind = TokenType.COLON, lexeme=':', literal='', line=bs:tell()}); 
 end
 
 lexemeMap[B','] = function(bs) 
-    return (Token{Kind = TokenType.COMMA, lexeme=',', literal='', line=bs:tell()}); 
+    return (Token{kind = TokenType.COMMA, lexeme=',', literal='', line=bs:tell()}); 
 end
 
 -- largely ignoring whitespace
@@ -126,7 +126,7 @@ lexemeMap[B'"'] = function(bs)
     local value = ffi.string(startPtr, len)
 
     -- return the string literal
-    return (Token{Kind = TokenType.STRING, lexeme='', literal=value, line=bs:tell()})
+    return (Token{kind = TokenType.STRING, lexeme='', literal=value, line=bs:tell()})
 end
 
 
@@ -163,13 +163,12 @@ local function lex_number(bs)
     local value = tonumber(ffi.string(startPtr, len))
     
     -- return the number literal
-    --return (Token{Kind = TokenType.NUMBER, lexeme='', literal=value, line=bs:getLine()})
-    return (Token{Kind = TokenType.NUMBER, lexeme='', literal=value, line=starting})
+    --return (Token{kind = TokenType.NUMBER, lexeme='', literal=value, line=bs:getLine()})
+    return (Token{kind = TokenType.NUMBER, lexeme='', literal=value, line=starting})
 end
 
 -- scan identifiers
--- this is usually going to be a single character
--- but we'll deal with multiples just for fun
+-- 'null', 'false', 'true'
 local function lex_identifier(bs)
     --print("lex_identifier")
     -- start back at first digit
@@ -188,12 +187,19 @@ local function lex_identifier(bs)
 --print("value: ", value)
     -- See if the identifier is a reserved word
     local kind = TokenType[value]
-    if not kind then
-        kind = TokenType.IDENTIFIER
+    local tok =  Token{kind = kind, lexeme=value, literal='', position=bs:tell()}
+
+
+    if kind == TokenType["true"] then
+        tok.literal = true;
+    elseif kind == TokenType["false"] then
+        tok.literal = false;
+    elseif kind == TokenType["null"] then
+        tok.literal = nil;
+    else
+        kind = TokenType.STRING
     end
 
-    -- return the identifier
-    local tok =  Token{Kind = kind, lexeme=value, literal='', position=bs:tell()}
     return tok
 end
 
@@ -237,7 +243,7 @@ function JSONScanner.tokens(self)
                 if isdigit(c) then
                     local tok = lex_number(bs)
                     return bs:tell(), tok
-                 elseif isalpha(c) then
+                elseif isalpha(c) then
                     local tok = lex_identifier(bs)
                     return bs:tell(), tok
                 else

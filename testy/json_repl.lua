@@ -1,14 +1,14 @@
 
 
 local JSONScanner = require("json_scanner")
+local JSONVM = require("json_vm")
 local octetstream = require("wordplay.octetstream")
 local mmap = require("wordplay.mmap")
 
 
 local function run(bs)
-    local xs = JSONScanner:new(bs)
-    for state, lexeme in xs:tokens() do
-        print(state, lexeme)
+    for state, token in  JSONVM(bs) do
+        print(state, token)
     end
 end
 
