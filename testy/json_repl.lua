@@ -7,14 +7,14 @@ local mmap = require("wordplay.mmap")
 
 
 local function run(bs)
-    --for state, token in  JSONVM(bs) do
-    --    print(state, token)
-    --end
-
-    local scanner = JSONScanner:new(bs)
-    for state, tok in scanner:tokens() do
-        print(state, tok)
+    for state, token in  JSONVM(bs) do
+        print(token)
     end
+
+    --local scanner = JSONScanner:new(bs)
+    --for state, tok in scanner:tokens() do
+    --    print(state, tok)
+    --end
 end
 
 local function runFile(filename)
