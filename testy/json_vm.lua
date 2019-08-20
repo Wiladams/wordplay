@@ -11,13 +11,16 @@ local TokenType = json_common.TokenType
 local STATES = enum {
     [1] = 
     "START",
+    
     "BEGIN_OBJECT",
     "END_OBJECT",
     "BEGIN_ARRAY",
     "END_ARRAY",
     "BEGIN_MEMBER",
     "END_MEMBER",
-    "FIELD_VALUE",
+
+    "MONIKER",
+
     "END",
 }
 
@@ -60,9 +63,25 @@ local function command_gen(param, state)
             -- since we swallow whitespace, it should simply be
             -- the beginning of a value (object, array, string, number, true, false, null)
             if value.kind == TokenType.LEFT_BRACE then
-                return {STATES.BEGIN_OBJECT, state_x}, command{kind=STATES.BEGIN_OBJECT}
+                return {STATES.START, state_x}, command{kind=STATES.BEGIN_OBJECT}
+            elseif value.kind == TokenType.RIGHT_BRACE then
+                return {STATES.START, state_x}, command{kind=STATES.END_OBJECT}
             elseif value.kind == TokenType.LEFT_BRACKET then
-                return {STATES.BEGIN_ARRAY, state_x}, command{kind=STATES.BEGIN_ARRAY}
+                return {STATES.START, state_x}, command{kind=STATES.BEGIN_ARRAY}
+            elseif value.kind == TokenType.RIGHT_BRACKET then
+                return {STATES.START, state_x}, command{kind=STATES.END_ARRAY}      
+            elseif value.kind == TokenType.STRING then
+                local moniker = value.literal
+
+                -- look for the colon next
+                state_x, value = gen_x(param_x, state_x)
+                if value.kind ~= TokenType.COLON then
+                    print("STATES.START, EXPECTED COLON: ", value)
+                    return nil;
+                end
+
+                                
+                return {STATES.START, state_x}, command{kind=STATES.MONIKER}
             end
 
             print("STATES.START, UNEXPECTED TokenType: ", value)
@@ -76,11 +95,9 @@ local function command_gen(param, state)
             -- member
             --   ws string ws ':' element
 
-            local fieldName 
-
             -- if right brace, end of object
             if value.kind == TokenType.RIGHT_BRACE then
-                return {STATES.END_OBJECT, state_x}, command{kind=STATES.END_OBJECT}
+                return {STATES.START, state_x}, command{kind=STATES.END_OBJECT}
             else
                 -- read members
                 -- string ':' value
@@ -89,14 +106,7 @@ local function command_gen(param, state)
                     return nil;
                 end
 
-                fieldName = value.literal
 
-                -- look for the colon next
-                state_x, value = gen_x(param_x, state_x)
-                if value.kind ~= TokenType.COLON then
-                    print("STATES.BEGIN_OBJECT, EXPECTED COLON: ", value)
-                    return nil;
-                end
 
                 -- get into state of reading a member
                 return {STATES.BEGIN_MEMBER, state_x}, command{kind=STATES.BEGIN_MEMBER, name =fieldName}
