@@ -29,6 +29,7 @@ local TokenType = enum {
     -- values                                     
     "OBJECT",
     "ARRAY",
+    "MONIKER",
     "STRING", 
     "NUMBER",
 
@@ -83,6 +84,7 @@ local EVENTS = {
 
 
 return {
+    NULL = "null";
     Token = Token;
     TokenType = TokenType;
     STATES = STATES;

@@ -20,6 +20,7 @@ local STATES = enum {
     "END_MEMBER",
 
     "MONIKER",
+    "VALUE",
 
     "END",
 }
@@ -44,7 +45,7 @@ end
 
 local function command_gen(param, state)
     local gen_x, param_x = param.gen_x, param.param_x
-    local state, state_x = state[1], state[2]
+    local state, state_x, statestack = state[1], state[2], state[3]
     
     -- This is done as a while loop
     -- because we need to build up a command
@@ -59,34 +60,71 @@ local function command_gen(param, state)
 
         if state == STATES.START then
             -- from the start state, we want to see an element
-            -- which is <ws> value <ws>
+            --   <ws> value <ws>
             -- since we swallow whitespace, it should simply be
             -- the beginning of a value (object, array, string, number, true, false, null)
+            local cmd 
+
             if value.kind == TokenType.LEFT_BRACE then
-                return {STATES.START, state_x}, command{kind=STATES.BEGIN_OBJECT}
-            elseif value.kind == TokenType.RIGHT_BRACE then
-                return {STATES.START, state_x}, command{kind=STATES.END_OBJECT}
+                cmd = {STATES.BEGIN_OBJECT, state_x, statestack}, command{kind=STATES.BEGIN_OBJECT}
             elseif value.kind == TokenType.LEFT_BRACKET then
-                return {STATES.START, state_x}, command{kind=STATES.BEGIN_ARRAY}
-            elseif value.kind == TokenType.RIGHT_BRACKET then
-                return {STATES.START, state_x}, command{kind=STATES.END_ARRAY}      
+                cmd = {STATES.BEGIN_ARRAY, state_x, statestack}, command{kind=STATES.BEGIN_ARRAY}
             elseif value.kind == TokenType.STRING then
-                local moniker = value.literal
-
-                -- look for the colon next
-                state_x, value = gen_x(param_x, state_x)
-                if value.kind ~= TokenType.COLON then
-                    print("STATES.START, EXPECTED COLON: ", value)
-                    return nil;
-                end
-
-                                
-                return {STATES.START, state_x}, command{kind=STATES.MONIKER}
+                cmd = {STATES.START, state_x, statestack}, command{kind=TokenType.STRING}
+            elseif value.kind == TokenType.NUMBER then
+                cmd = {STATES.START, state_x, statestack}, command{kind=TokenType.NUMBER, value =value.literal}
+            elseif value.kind == TokenType["true"] then
+                cmd = {STATES.START, state_x, statestack}, command{kind=TokenType["true"], value =value.literal}
+            elseif value.kind == TokenType["false"] then
+                cmd =  {STATES.START, state_x, statestack}, command{kind=TokenType["false"], value =value.literal}
+            elseif value.kind == TokenType["null"] then
+                cmd = {STATES.START, state_x, statestack}, command{kind=TokenType["null"], value =value.literal}
             end
 
-            print("STATES.START, UNEXPECTED TokenType: ", value)
-            return nil;
+            if not cmd then
+                -- if there is no command, just continue
+                -- onto the next token
+                -- this will effectively swallow following ',' tokens
+                print("STATES.START, UNEXPECTED TokenType: ", value)
+            else
+                return cmd;
+            end
         elseif state == STATES.BEGIN_OBJECT then
+            statestack:push(STATES.BEGIN_OBJECT)
+            if value.kind == TokenType.RIGHT_BRACE then
+                local next = statestack:pop()
+                return {next, state_x, statestack}, command{kind=STATES.END_OBJECT}
+            end
+
+            -- expect moniker
+            -- expect value
+            -- optional ',' separator
+
+        elseif state == STATES.BEGIN_ARRAY then
+            statestack:push(STATES.BEGIN_ARRAY)
+            -- handle array entries
+            if value.kind == TokenType.RIGHT_BRACKET then
+                local next = statestack:pop()
+                return {next, state_x, statestack}, command{kind=STATES.END_ARRAY}
+            end
+
+            -- look for values
+            if value.kind == TokenType.LEFT_BRACE then
+                return {STATES.BEGIN_OBJECT, state_x}, command{kind=STATES.BEGIN_OBJECT}
+            elseif value.kind == TokenType.LEFT_BRACKET then
+                return {STATES.BEGIN_ARRAY, state_x}, command{kind=STATES.BEGIN_ARRAY}
+            elseif value.kind == TokenType.STRING then
+                return {STATES.START, state_x}, command{kind=TokenType.STRING, value =value.literal}
+            elseif value.kind == TokenType.NUMBER then
+                return {STATES.START, state_x}, command{kind=TokenType.NUMBER, value =value.literal}
+            elseif value.kind == TokenType["true"] then
+                return {STATES.START, state_x}, command{kind=TokenType["true"], value =value.literal}
+            elseif value.kind == TokenType["false"] then
+                return {STATES.START, state_x}, command{kind=TokenType["false"], value =value.literal}
+            elseif value.kind == TokenType["null"] then
+                return {STATES.START, state_x}, command{kind=TokenType["null"], value =value.literal}
+            end
+        elseif state == STATES.BEGIN_MEMBER then
             -- { ws }
             -- { members }
             -- members
@@ -95,22 +133,22 @@ local function command_gen(param, state)
             -- member
             --   ws string ws ':' element
 
-            -- if right brace, end of object
-            if value.kind == TokenType.RIGHT_BRACE then
-                return {STATES.START, state_x}, command{kind=STATES.END_OBJECT}
-            else
-                -- read members
-                -- string ':' value
-                if value.kind ~= TokenType.STRING then
-                    print("STATES.BEGIN_OBJECT, UNEXPECTED TokenType: ", value)
-                    return nil;
-                end
-
-
-
-                -- get into state of reading a member
-                return {STATES.BEGIN_MEMBER, state_x}, command{kind=STATES.BEGIN_MEMBER, name =fieldName}
+            if value.kind == TokenType.STRING then
+                return {STATES.START, state_x}, command{kind=TokenType.STRING, value =value.literal}
+            elseif value.kind == TokenType.NUMBER then
+                return {STATES.START, state_x}, command{kind=TokenType.NUMBER, value =value.literal}
+            elseif value.kind == TokenType["true"] then
+                return {STATES.START, state_x}, command{kind=TokenType["true"], value =value.literal}
+            elseif value.kind == TokenType["false"] then
+                return {STATES.START, state_x}, command{kind=TokenType["false"], value =value.literal}
+            elseif value.kind == TokenType["null"] then
+                return {STATES.START, state_x}, command{kind=TokenType["null"], value =value.literal}
             end
+
+
+            print("STATES.BEGIN_MEMBER, UNEXPECTED TokenType: ", value)
+            return nil;
+
         elseif state == STATES.BEGIN_MEMBER then
             -- fields can be of various types
             -- string, number, null, array, object
@@ -140,7 +178,7 @@ function JSONVM(bs)
 
     local gen, param, state = scanner:tokens()
 
-    return command_gen, {gen_x=gen, param_x = param}, {STATES.START, state}
+    return command_gen, {gen_x=gen, param_x = param}, {STATES.START, state, stack()}
 end
 
 return JSONVM

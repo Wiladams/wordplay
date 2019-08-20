@@ -19,6 +19,21 @@ local Token = json_common.Token;
 local TokenType = json_common.TokenType;
 local STATES = json_common.STATES;
 
+local function skipspaces(bs)
+    while true do
+        if bs:isEOF() then
+            return false;
+        end
+
+        if isspace(bs:peekOctet()) then
+            bs:skip(1)
+        else
+            return true;
+        end
+    end
+end
+
+
 -- helper function
 -- if the next character in the stream matches
 -- what is expected, then consume it and return true
@@ -37,6 +52,8 @@ local function match(bs, expected)
 
     return true;
 end
+
+
 
 -- helper function
 -- if the next set of characters in the stream matches
@@ -103,11 +120,6 @@ lexemeMap[B'"'] = function(bs)
     local startPtr = bs:getPositionPointer();
 
     while bs:peekOctet() ~= B'"' and not bs:isEOF() do
-        --if bs:peekOctet() == B'\n' then
-        --    bs:incrementLineCount();
-        --end
-
-        -- skip to next character
         bs:skip(1);
     end
 
@@ -125,7 +137,15 @@ lexemeMap[B'"'] = function(bs)
 
     local value = ffi.string(startPtr, len)
 
-    -- return the string literal
+    -- skip any whitespace and look for a following colon
+    -- if there is a following colon, then it is a moniker
+
+    skipspaces(bs)
+    if match(bs, B':') then
+        return (Token{kind = TokenType.MONIKER, lexeme='', literal=value, line=bs:tell()})
+    end
+
+    -- return as string literal
     return (Token{kind = TokenType.STRING, lexeme='', literal=value, line=bs:tell()})
 end
 

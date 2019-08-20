@@ -116,6 +116,15 @@ function List:PopRight()
 	return value
 end
 
+function  List:PeekRight()
+	local last = self.last
+	if self.first > last then
+		return nil, "list is empty"
+	end
+
+	return self[last]
+end
+
 --[[
 	Stack
 --]]
@@ -154,6 +163,12 @@ end
 
 function Stack.pop(self)
 	return self.Impl:PopRight();
+end
+
+function Stack.top(self)
+	-- return what's at the top of the stack without
+	-- popping it off
+	return self.Impl:PeekRight();
 end
 
 
