@@ -27,18 +27,18 @@ local TokenType = enum {
 
 
     -- values                                     
-    "OBJECT",
-    "ARRAY",
+    "BEGIN_OBJECT",
+    "END_OBJECT",
+    "BEGIN_ARRAY",
+    "END_ARRAY",
     "MONIKER",
     "STRING", 
     "NUMBER",
-
-    "TEXT",
-    
-    -- identifiers
-    "null",
     "false",
     "true",
+    "null",
+
+    "TEXT",
 }
 
 local Token_mt = {

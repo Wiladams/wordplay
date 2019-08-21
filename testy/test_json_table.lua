@@ -7,29 +7,24 @@ local JSONScanner = require("json_scanner")
 local JSONVM = require("json_vm")
 local octetstream = require("wordplay.octetstream")
 local mmap = require("wordplay.mmap")
+local collections = require("wordplay.collections")
+local stack = collections.Stack
 
-local function indent(level)
-    local nspaces = level * 4;
-    if nspaces < 1 then return end
 
-    for i=1,nspaces do
-        io.write(' ')
-    end
-end
+local function jsonToTable(bs, res)
+    res = res or {}
 
-local function output(level, ...)
-    indent(level)
-    io.write(...)
-end
+    local currentTbl = res
+    local currentMoniker
+    local tableStack = stack();
 
-local function run(bs)
-    local level = 0
 
     for state, token in  JSONVM(bs) do
 
         if token.kind == TokenType.BEGIN_OBJECT then
+            stackTop = {kind = "object", data = {}}
             output(level, "{\n")
-            level = level + 1
+            inObject = true;
         elseif token.kind == TokenType.END_OBJECT then
             output(level-1, "};\n")
             level = level - 1
@@ -37,17 +32,28 @@ local function run(bs)
             output(level, '[\n')
         elseif token.kind == TokenType.END_ARRAY then
             output(level-1, '];\n')
-        elseif token.kind == TokenType.STRING then
-            io.write(string.format("\"%s\";\n", token.value))
         elseif token.kind == TokenType.MONIKER then
-            output(level, string.format("%s = ", token.value))
+            currentMoniker = token.value
+        elseif token.kind == TokenType.STRING then
+            if currentMoniker then
+                currentTbl[currentMoniker] = token.value
+                currentMoniker = nil
+            else
+                table.insert(currentTbl, token.value)
+            end
         elseif token.kind == TokenType.NUMBER then
-            output(level, string.format("%d;",token.value))
+            if currentMoniker then
+                currentTbl[currentMoniker] = token.value
+                currentMoniker = nil
+            else
+                table.insert(currentTbl, token.value)
+            end
         else
             print(token)
         end
     end
 
+    return res
 end
 
 local function runFile(filename)
@@ -55,14 +61,7 @@ local function runFile(filename)
     local ptr = m:getPointer()
 
     local bs = octetstream(ptr, #m)
-    run(bs)
-end
-
-local function runPrompt()
-    while true do
-        io.write("> ")
-        run(octetstream(io.read("*l")))
-    end
+    return jsonToTable(bs)
 end
 
 local function main(args)

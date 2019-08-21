@@ -9,18 +9,8 @@ local json_common = require("json_common")
 local TokenType = json_common.TokenType
 
 local STATES = enum {
-    [1] = 
+    [0] = 
     "START",
-    
-    "BEGIN_OBJECT",
-    "END_OBJECT",
-    "BEGIN_ARRAY",
-    "END_ARRAY",
-
-    "MONIKER",
-    "VALUE",
-
-    "END",
 }
 
 
@@ -56,6 +46,7 @@ local function command_gen(param, cmdstate)
         end
 
         if state == STATES.START then
+            --print("STATE: START - ", value)
             -- from the start state, we want to see an element
             --   <ws> value <ws>
             -- since we swallow whitespace, it should simply be
@@ -64,19 +55,11 @@ local function command_gen(param, cmdstate)
             local next = statestack:top() or STATES.START
 
             if value.kind == TokenType.LEFT_BRACE then
-                newstate, cmd = {STATES.BEGIN_OBJECT, state_x, statestack}, command{kind=STATES.BEGIN_OBJECT}
+                statestack:push(TokenType.BEGIN_OBJECT)
+                newstate, cmd = {TokenType.BEGIN_OBJECT, state_x, statestack}, command{kind=TokenType.BEGIN_OBJECT}
             elseif value.kind == TokenType.LEFT_BRACKET then
-                newstate,cmd = {STATES.BEGIN_ARRAY, state_x, statestack}, command{kind=STATES.BEGIN_ARRAY}
-            elseif value.kind == TokenType.STRING then
-                newstate,cmd = {next, state_x, statestack}, command{kind=TokenType.STRING}
-            elseif value.kind == TokenType.NUMBER then
-                newstate,cmd = {next, state_x, statestack}, command{kind=TokenType.NUMBER, value =value.literal}
-            elseif value.kind == TokenType["true"] then
-                newstate,cmd = {next, state_x, statestack}, command{kind=TokenType["true"], value =value.literal}
-            elseif value.kind == TokenType["false"] then
-                newstate,cmd =  {next, state_x, statestack}, command{kind=TokenType["false"], value =value.literal}
-            elseif value.kind == TokenType["null"] then
-                newstate,cmd = {next, state_x, statestack}, command{kind=TokenType["null"], value =value.literal}
+                statestack:push(TokenType.BEGIN_ARRAY)
+                newstate,cmd = {TokenType.BEGIN_ARRAY, state_x, statestack}, command{kind=TokenType.BEGIN_ARRAY}
             end
 
             if not cmd then
@@ -87,49 +70,72 @@ local function command_gen(param, cmdstate)
             else
                 return newstate, cmd;
             end
-        elseif state == STATES.BEGIN_OBJECT then
-            --print("BEGIN_OBJECT")
-            statestack:push(STATES.BEGIN_OBJECT)
+        elseif state == TokenType.BEGIN_OBJECT then
+            --print("STATE: BEGIN_OBJECT")
             if value.kind == TokenType.RIGHT_BRACE then
-                local next = statestack:pop()
-                return {next, state_x, statestack}, command{kind=STATES.END_OBJECT}
+                statestack:pop()
+                local next = statestack:top()
+                return {next, state_x, statestack}, command{kind=TokenType.END_OBJECT}
             end
 
-            -- expect moniker
-            if value.kind == TokenType.MONIKER then
-                return {STATES.START, state_x, statestack}, command{kind=TokenType.MONIKER, value = value.literal}
-            elseif value.kind == TokenType.COMMA then
-                -- swallow comma
-            end
-        elseif state == STATES.BEGIN_ARRAY then
-            statestack:push(STATES.BEGIN_ARRAY)
-            -- handle array entries
-            if value.kind == TokenType.RIGHT_BRACKET then
-                local next = statestack:pop()
-                return {next, state_x, statestack}, command{kind=STATES.END_ARRAY}
-            end
+            local nextstate = statestack:top() or TokenType.BEGIN_OBJECT
 
-            -- look for values
-            if value.kind == TokenType.LEFT_BRACE then
-                return {STATES.BEGIN_OBJECT, state_x}, command{kind=STATES.BEGIN_OBJECT}
+            if value.kind == TokenType.COMMA then
+                --ignore comma, continue processing in same state
+            elseif value.kind == TokenType.LEFT_BRACE then
+                statestack:push(TokenType.BEGIN_OBJECT)
+                return {TokenType.BEGIN_OBJECT, state_x, statestack}, command{kind=TokenType.BEGIN_OBJECT}
             elseif value.kind == TokenType.LEFT_BRACKET then
-                return {STATES.BEGIN_ARRAY, state_x}, command{kind=STATES.BEGIN_ARRAY}
+                statestack:push(TokenType.BEGIN_ARRAY)
+                return {TokenType.BEGIN_ARRAY, state_x, statestack}, command{kind=TokenType.BEGIN_ARRAY}
+            elseif value.kind == TokenType.MONIKER then
+                return {nextstate, state_x, statestack}, command{kind=TokenType.MONIKER, value = value.literal}
             elseif value.kind == TokenType.STRING then
-                return {STATES.START, state_x}, command{kind=TokenType.STRING, value =value.literal}
+                return {nextstate, state_x, statestack}, command{kind=TokenType.STRING, value = value.literal}
             elseif value.kind == TokenType.NUMBER then
-                return {STATES.START, state_x}, command{kind=TokenType.NUMBER, value =value.literal}
+                return {nextstate, state_x, statestack}, command{kind=TokenType.NUMBER, value = value.literal}
             elseif value.kind == TokenType["true"] then
-                return {STATES.START, state_x}, command{kind=TokenType["true"], value =value.literal}
+                return {nextstate, state_x, statestack}, command{kind=TokenType["true"], value = value.literal}
             elseif value.kind == TokenType["false"] then
-                return {STATES.START, state_x}, command{kind=TokenType["false"], value =value.literal}
+                return {nextstate, state_x, statestack}, command{kind=TokenType["false"], value = value.literal}
             elseif value.kind == TokenType["null"] then
-                return {STATES.START, state_x}, command{kind=TokenType["null"], value =value.literal}
+                return {nextstate, state_x, statestack}, command{kind=TokenType["null"], value = value.literal}
+            end
+        elseif state == TokenType.BEGIN_ARRAY then
+            --print("STATE: BEGIN_ARRAY - ", value)
+            if value.kind == TokenType.RIGHT_BRACKET then
+                -- pop current state off the stack
+                statestack:pop()
+                -- next state should be whatever is now at the 
+                -- top of the stack
+                return {statestack:top(), state_x, statestack}, command{kind=TokenType.END_ARRAY}
+            end
+
+            local nextstate = statestack:top() or TokenType.BEGIN_ARRAY
+
+            if value.kind == TokenType.COMMA then
+                --ignore comma, continue processing in same state
+            elseif value.kind == TokenType.LEFT_BRACE then
+                statestack:push(TokenType.BEGIN_OBJECT)
+                return {TokenType.BEGIN_OBJECT, state_x, statestack}, command{kind=TokenType.BEGIN_OBJECT}
+            elseif value.kind == TokenType.LEFT_BRACKET then
+                statestack:push(TokenType.BEGIN_ARRAY)
+                return {TokenType.BEGIN_ARRAY, state_x, statestack}, command{kind=TokenType.BEGIN_ARRAY}
+            elseif value.kind == TokenType.STRING then
+                return {nextstate, state_x, statestack}, command{kind=TokenType.STRING, value = value.literal}
+            elseif value.kind == TokenType.NUMBER then
+                return {nextstate, state_x, statestack}, command{kind=TokenType.NUMBER, value = value.literal}
+            elseif value.kind == TokenType["true"] then
+                return {nextstate, state_x, statestack}, command{kind=TokenType["true"], value = value.literal}
+            elseif value.kind == TokenType["false"] then
+                return {nextstate, state_x, statestack}, command{kind=TokenType["false"], value = value.literal}
+            elseif value.kind == TokenType["null"] then
+                return {nextstate, state_x, statestack}, command{kind=TokenType["null"], value = value.literal}
             end
         end
 
         -- if we've gotten here, we'll just return
-        -- whatever the scanner did
-        return {state, state_x, statestack}, value
+        -- cycle around again, ignoring the token
     end
 
 
