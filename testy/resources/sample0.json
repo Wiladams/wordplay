@@ -1,3 +1,5 @@
 {
-    "master": "Master Value"
+    "master": "Master Value",
+    "key2": "Key Value 2",
+    "key3": "Key Value 3"
 }

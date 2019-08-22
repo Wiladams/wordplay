@@ -9,6 +9,8 @@ local octetstream = require("wordplay.octetstream")
 local mmap = require("wordplay.mmap")
 local collections = require("wordplay.collections")
 local stack = collections.Stack
+local funk = require("wordplay.funk")()
+
 
 local function isArray(tbl)
     return #tbl > 0
@@ -30,27 +32,33 @@ local function output(level, ...)
 end
 
 local function printTable(level,tbl)
-    --print("printTable: ", level, #tbl, tbl)
 
     if isArray(tbl) then
         --print("ISARRAY")
         for _, entry in ipairs(tbl) do
+            --each(print, entry)
+---[[
             if type(entry) == "table" then
                 printTable(level+1, entry)
             else
-                output(level, entry)
+                each(print, entry)
+                --output(level, entry)
             end
+--]]
         end
     else
-        --print("DICT")
+        --each(print, entry)
+--[[
         for k, entry in pairs(tbl) do
             --print(k,v)
             if type(entry) == "table" then
                 printTable(level+1, entry)
             else
-                output(level, k,entry)
+                each(print, entry)
+                --output(level, k,entry)
             end
         end
+--]]
     end
 
 end
@@ -136,8 +144,11 @@ local function runFile(filename)
     --for k,v in pairs(tbl[1]) do
     --    print(k,v)
     --end
+    for _, entry in ipairs(tbl[1]) do
+        print(entry)
+    end
 
-    printTable(0, tbl)
+    --printTable(0, tbl)
 end
 
 local function main(args)
