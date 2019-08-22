@@ -40,9 +40,19 @@ local function run(bs)
         elseif token.kind == TokenType.STRING then
             io.write(string.format("\"%s\";\n", token.value))
         elseif token.kind == TokenType.MONIKER then
-            output(level, string.format("%s = ", token.value))
+            if token.value:match('-') then
+                output(level, string.format("['%s'] = ", token.value))
+            else
+                output(level, string.format("%s = ", token.value))
+            end
         elseif token.kind == TokenType.NUMBER then
             output(level, string.format("%d;",token.value))
+        elseif token.kind == TokenType.null then
+            output(level, "'NULL';")
+        elseif token.kind == TokenType['true'] then
+            io.write("true")
+        elseif token.kind == TokenType['false'] then
+            io.write('false')
         else
             print(token)
         end

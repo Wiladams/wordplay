@@ -215,7 +215,7 @@ local function lex_identifier(bs)
     elseif kind == TokenType["false"] then
         tok.literal = false;
     elseif kind == TokenType["null"] then
-        tok.literal = nil;
+        tok.literal = json_common.NULL;
     else
         kind = TokenType.STRING
     end
