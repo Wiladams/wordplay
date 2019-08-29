@@ -144,7 +144,9 @@ methods.distinct = method0(distinct)
 --[[
 EQuality
     SequenceEqual
+--]]
 
+--[[
 Element Operators
     ElementAt
     ElementAtOrDefault
@@ -157,6 +159,8 @@ Element Operators
     DefaultIfEmpty
     
 --]]
+exports.First = funk.head;
+exports.Last = funk.tail;
 
 -- Prepping for export
 setmetatable(exports, {

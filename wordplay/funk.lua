@@ -195,9 +195,27 @@ local function nil_gen(param, state)
 end
 
 --[[
+    the params contain a data, and size element
+    the 'data' is array addressable
+    the 'size' indicates how many elements are in the data
+
+    Since there is no assumption made as to the type of the 
+    elements, anything that encapsulates data/size can be used
+]]
+local function sized_data_gen(params, state)
+    -- if we've reached the end of the stream
+    -- terminate the iteration
+    if params.size - state < 1 then
+        return nil;
+    end
+
+    return state+1, params.data[state]
+end
+
+--[[
     generate elements from anything that has array
     syntax
-
+    
     param -> {
             data = thingthatrespondsto[], 
             offset = offset from whence to start

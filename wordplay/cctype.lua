@@ -3,6 +3,9 @@
 
 	http://pic.dhe.ibm.com/infocenter/aix/v6r1/index.jsp?topic=%2Fcom.ibm.aix.basetechref%2Fdoc%2Fbasetrf1%2Fctype.htm
 	http://www.cplusplus.com/reference/clibrary/cctype/
+
+	These are good fold old time standard ASCII characterizations.  These are
+	not good for unicode codepoint usage.
 --]]
 
 local ffi = require "ffi"
@@ -67,12 +70,12 @@ local function ispunct(c)
 --]]
 end
 
--- ' ' 0x20, 
--- '\t' 0x09, 
--- '\n' 0x0a, 
--- '\v' 0x0b, 
--- '\f' 0x0c, 
--- '\r' 0x0d
+-- ' ' 0x20, 	space
+-- '\t' 0x09, 	horizontal tab
+-- '\n' 0x0a, 	newline
+-- '\v' 0x0b, 	vertical tab
+-- '\f' 0x0c, 	form feed
+-- '\r' 0x0d	carriage return
 local function isspace(c)
 	return c == 0x20 or (c >= 0x09 and c<=0x0d)
 end

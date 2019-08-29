@@ -1,7 +1,3 @@
-local ffi = require("ffi")
-local cctype = require("wordplay.cctype")
-local isspace = cctype.isspace
-
 --[[
 field_iter
 
@@ -15,6 +11,11 @@ suitable for things like splits, chains, cycles, and the like
     This iterator will return blank strings instead of terminate
     with a null when the string length is 0
 --]]
+
+local ffi = require("ffi")
+local cctype = require("wordplay.cctype")
+local isspace = cctype.isspace
+
 local function field_iter_gen(param, state)
 
     -- check if end of data
