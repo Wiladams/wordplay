@@ -248,11 +248,6 @@ function octetstream.writeOctets(self, octets, size, allowTruncate)
 
     return true;
 end
-
-
-function octetstream.writeString(self, str)
-    return self:writeBytes(str)
-end
 --]]
 
 
