@@ -9,7 +9,6 @@
 ]]
 local ffi = require("ffi")
 local bit = require("bit")
-local bor, lshift = bit.bor, bit.lshift
 local min = math.min
 
 --[[

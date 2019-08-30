@@ -192,21 +192,6 @@ function binstream.octets(self, state)
     return octet_gen, self, state
 end
 
---[[
-    
-function binstream.octets(self)
-    return coroutine.wrap(function()
-        while true do
-            c, err = self:readOctet()
-            if not c then
-                return nil;
-            end
-            coroutine.yield(c)
-        end
-    end)
-end
---]]
-
 -- Read an integer value
 -- The parameter 'n' determines how many bytes to read.
 -- 'n' can be up to 8 
@@ -236,8 +221,6 @@ function binstream.read(self, n)
     return v;
 end
 
-
-
 -- BUGBUG, do error checking against end of stream
 function binstream.readBytes(self, n, bytes)
     if n < 1 then 
@@ -260,8 +243,6 @@ function binstream.readBytes(self, n, bytes)
 
     return bytes, nActual;
 end
-
-
 
 
 -- Read bytes and turn into a Lua string
@@ -290,12 +271,9 @@ function binstream.readString(self, n)
     return str;
 end
 
-
-
 function binstream.readNumber(self, n)
     return tonumber(self:read(n));
 end
-
 
 -- Read 8-bit signed integer
 function binstream.readInt8(self)
@@ -374,8 +352,6 @@ function binstream.writeOctet(self, octet)
 end
 
 function binstream.writeInt(self, value, n)
-
-
     if self:remaining() < n then
         return false, "NOT ENOUGH DATA AVAILABLE"
     end

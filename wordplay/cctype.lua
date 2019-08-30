@@ -3,9 +3,12 @@
 
 	http://pic.dhe.ibm.com/infocenter/aix/v6r1/index.jsp?topic=%2Fcom.ibm.aix.basetechref%2Fdoc%2Fbasetrf1%2Fctype.htm
 	http://www.cplusplus.com/reference/clibrary/cctype/
+	http://www.cplusplus.com/reference/cctype/
 
-	These are good fold old time standard ASCII characterizations.  These are
-	not good for unicode codepoint usage.
+	These are good fold old time standard ASCII 
+	characters (0x00 .. 0x7f)
+	These are not good for unicode codepoint usage,
+	and they don't support locale
 --]]
 
 local ffi = require "ffi"
@@ -33,6 +36,10 @@ end
 
 local function isascii(c)
 	return (c >= 0) and (c <= 0x7f)
+end
+
+local function isblank(c)
+	return c == B' ' or c == B'\t'
 end
 
 local function isbyte(n)
@@ -77,7 +84,8 @@ end
 -- '\f' 0x0c, 	form feed
 -- '\r' 0x0d	carriage return
 local function isspace(c)
-	return c == 0x20 or (c >= 0x09 and c<=0x0d)
+	--return c == 0x20 or (c >= 0x09 and c<=0x0d)
+	return c == 0x20 or ((c-B'\t') < 5)
 end
 
 local function isupper(c)
@@ -107,6 +115,7 @@ return {
 	isalnum = isalnum,
 	isalpha = isalpha,
 	isascii = isascii,
+	isblank = isblank,
 	isbyte	= isbyte,
 	iscntrl = iscntrl,
 	isdigit = isdigit,
