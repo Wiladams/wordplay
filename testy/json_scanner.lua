@@ -146,7 +146,8 @@ lexemeMap[B'"'] = function(bs)
     end
 
     -- return as string literal
-    return (Token{kind = TokenType.STRING, lexeme='', literal=value, line=bs:tell()})
+    return Token{kind = TokenType.STRING, lexeme='', literal=value, line=bs:tell()}
+    --return Token{kind = TokenType.STRING, lexeme='', literal=string.format(value), line=bs:tell()}
 end
 
 

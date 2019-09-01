@@ -39,7 +39,8 @@ local TokenType = enum {
     "MONIKER",
     "STRING", 
     "NUMBER",
-
+    "BOOLEAN",
+    
     -- leterals
     "false",
     "true",

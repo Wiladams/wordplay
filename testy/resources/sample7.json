@@ -1,1 +1,7 @@
-["a", "b", "c", 1, 2, 3]
+{
+    ["a", "b", "c", 1, 2, 3]
+    "moniker" : {
+        "name" : "William",
+        "value" : "this\nis\na new\t line"
+    }
+}
