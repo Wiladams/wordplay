@@ -19,6 +19,36 @@ local Token = json_common.Token;
 local TokenType = json_common.TokenType;
 local STATES = json_common.STATES;
 
+local function createSet(...)
+    local n = select('#',...)
+    local res = {}
+    for i = 1, n do
+        local arg = select(i, ...)
+        local byte = string.byte(arg)
+        res[byte] = true
+    end
+    return res
+end
+
+local escape_char_map = {
+    [ "\\" ] = "\\\\",
+    [ "\"" ] = "\\\"",
+    [ "\b" ] = "\\b",
+    [ "\f" ] = "\\f",
+    [ "\n" ] = "\\n",
+    [ "\r" ] = "\\r",
+    [ "\t" ] = "\\t",
+}
+
+local escape_char_map_inv = { [ "\\/" ] = "/" }
+for k, v in pairs(escape_char_map) do
+    escape_char_map_inv[v] = k
+end
+
+local escapeChars = createSet('/','\\','"','b','f','n','r','t','u')
+
+
+
 local function skipspaces(bs)
     while true do
         if bs:isEOF() then
@@ -114,12 +144,34 @@ lexemeMap[B'\r'] = function(bs) end
 lexemeMap[B'\t'] = function(bs) end
 lexemeMap[B'\n'] = function(bs) end
 
+
 -- string literal
+-- need to add conversion of embedded chars
+-- into byte values
+
+
+
 lexemeMap[B'"'] = function(bs)
     local starting = bs:tell()
     local startPtr = bs:getPositionPointer();
 
-    while bs:peekOctet() ~= B'"' and not bs:isEOF() do
+    -- To start, we have already consumed the starting
+    -- '"', so we're looking for the terminating one
+    local hasEscape = false;
+
+    --while bs:peekOctet() ~= B'"' and not bs:isEOF() do
+    while not bs:isEOF() do
+        local c = bs:peekOctet()
+        if c == B'"' then
+            break;
+        end
+
+        if c == B'\\' then
+            if escapeChars[bs:peekOctet(1)] then
+                hasEscape = true;
+                bs:skip(1)
+            end
+        end
         bs:skip(1);
     end
 
@@ -146,6 +198,11 @@ lexemeMap[B'"'] = function(bs)
     end
 
     -- return as string literal
+    -- first translate escape characters
+    if hasEscape then
+        value = value:gsub("\\.", escape_char_map_inv)
+    end
+
     return Token{kind = TokenType.STRING, lexeme='', literal=value, line=bs:tell()}
     --return Token{kind = TokenType.STRING, lexeme='', literal=string.format(value), line=bs:tell()}
 end

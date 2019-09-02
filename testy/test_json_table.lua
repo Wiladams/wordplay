@@ -84,15 +84,12 @@ local function jsonToTable(bs, res)
     return res
 end
 
-
-
 local function runFile(filename)
     local m = mmap(filename)
     local ptr = m:getPointer()
 
     local bs = octetstream(ptr, #m)
     local tbl = jsonToTable(bs)
-
 
     print(inspect(tbl[1]))
 end
