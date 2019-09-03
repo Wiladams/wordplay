@@ -1,6 +1,8 @@
     -- http://scripts.sil.org/cms/scripts/page.php?site_id=nrsi&id=iws-appendixa
 local floor = math.floor
 local char = string.char
+local bit = require("bit")
+local band, bor = bit.band, bit.bor
 
 local function utf8_to_codepoint(c1, c2, c3, c4)
     if not c4 then
@@ -36,7 +38,18 @@ local function codepoint_to_utf8(n)
     return nil, string.format("invalid unicode codepoint '%x'", n)
 end
 
+local function isHighSurrogate(uc) 
+    return band(uc, 0xFC00) == 0xD800
+end
+
+local function isLowSurrogate(uc)
+    return   band(uc, 0xFC00) == 0xDC00
+end
+
 return {
     utf8ToCp = utf8_to_codepoint;
     cpToUtf8 = codepoint_to_utf8;
+
+    isHighSurrogate = isHighSurrogate;
+    isLowSurrogate = isLowSurrogate;
 }

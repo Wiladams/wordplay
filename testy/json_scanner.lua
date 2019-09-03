@@ -7,7 +7,7 @@ local cctype = require("wordplay.cctype")
 local isdigit = cctype.isdigit
 local isalpha = cctype.isalpha
 local isalnum = cctype.isalnum
-local isspace = cctype.isspace
+--local isspace = cctype.isspace
 
 local octetstream = require("wordplay.octetstream")
 
@@ -48,6 +48,10 @@ end
 local escapeChars = createSet('/','\\','"','b','f','n','r','t','u')
 
 
+local function iswhitespace(c)
+    return c == B' ' or c == B'\t' or
+        c == B'\n' or c == '\r'
+end
 
 local function skipspaces(bs)
     while true do
@@ -55,7 +59,7 @@ local function skipspaces(bs)
             return false;
         end
 
-        if isspace(bs:peekOctet()) then
+        if iswhitespace(bs:peekOctet()) then
             bs:skip(1)
         else
             return true;
@@ -145,12 +149,7 @@ lexemeMap[B'\t'] = function(bs) end
 lexemeMap[B'\n'] = function(bs) end
 
 
--- string literal
--- need to add conversion of embedded chars
--- into byte values
-
-
-
+-- text literal and moniker
 lexemeMap[B'"'] = function(bs)
     local starting = bs:tell()
     local startPtr = bs:getPositionPointer();
@@ -208,15 +207,55 @@ lexemeMap[B'"'] = function(bs)
 end
 
 
+--[[
+number
+    integer fraction exponent
 
+integer
+    digit
+    onenine digits
+    '-' digit
+    '-' onenine digits
+
+digits
+    digit
+    digit digits
+
+digit
+    '0'
+    onenine
+
+onenine
+    '1' . '9'
+
+fraction
+    ""
+    '.' digits
+
+exponent
+    ""
+    'E' sign digits
+    'e' sign digits
+
+sign
+    ""
+    '+'
+    '-'
+]]
 -- scan a number
+-- something got us here, it was either
+-- a digit, a '-'
 local function lex_number(bs)
-    -- start back at first digit
-    bs:skip(-1)
     local starting = bs:tell();
     local startPtr = bs:getPositionPointer();
 
     -- get through all digits
+    -- -, digit, ., E, digits
+    if bs:peekOctet() == B'+' or bs:peekOctet() == B'-' then
+        bs:skip(1)
+    end
+
+    -- next, MUST be 0 or [1..9]
     while(isdigit(bs:peekOctet())) do
         bs:skip(1);
     end
@@ -230,7 +269,7 @@ local function lex_number(bs)
             while isdigit(bs:peekOctet()) do
                 bs:skip(1);
             end
-        elseif isspace(bs:peekOctet(1)) then
+        elseif iswhitespace(bs:peekOctet(1)) then
             bs:skip(1)
         end
     end
@@ -318,7 +357,8 @@ function JSONScanner.tokens(self)
                     -- deal with error if there was one
                 end
             else
-                if isdigit(c) then
+                if isdigit(c) or c == B'-' then
+                    bs:skip(-1)
                     local tok = lex_number(bs)
                     return bs:tell(), tok
                 elseif isalpha(c) then
