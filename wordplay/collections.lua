@@ -78,6 +78,11 @@ function List.new(params)
 	return obj
 end
 
+function List:reset()
+	self.first = 0;
+	self.last = -1;
+	return self
+end
 
 function List:PushLeft (value)
 	local first = self.first - 1
@@ -137,40 +142,83 @@ setmetatable(Stack,{
 
 local Stack_mt = {
 	__len = function(self)
-		return self.Impl.last - self.Impl.first+1
+		return self:length()
 	end,
 
 	__index = Stack;
 }
 
-function Stack.new(self, ...)
-	local obj = {
-		Impl = List.new();
-	}
+function Stack.new(self, obj)
+	obj = obj or {first=0, last=-1}
 
 	setmetatable(obj, Stack_mt);
 
 	return obj;
 end
 
-function Stack.len(self)
-	return self.Impl.last - self.Impl.first+1
+function Stack.length(self)
+	return self.last - self.first+1
+end
+
+function Stack.reset(self)
+	self.first = 0;
+	self.last = -1;
+
+	return self
+end
+
+-- pop all the items off the stack
+function Stack.clear(self)
+	local n = self:len()
+	for i=1,n do 
+		self:pop()
+	end
+
+	return self
 end
 
 function Stack.push(self, item)
-	return self.Impl:PushRight(item);
+	local last = self.last + 1
+	self.last = last
+	self[last] = value
+
+	return self
 end
 
 function Stack.pop(self)
-	return self.Impl:PopRight();
+	local last = self.last
+	if self.first > last then
+		return nil, "list is empty"
+	end
+	local value = self[last]
+	self[last] = nil         -- to allow garbage collection
+	self.last = last - 1
+
+	return value
 end
 
 function Stack.top(self)
 	-- return what's at the top of the stack without
 	-- popping it off
-	return self.Impl:PeekRight();
+	local last = self.last
+	if self.first > last then
+		return nil, "list is empty"
+	end
+
+	return self[last]
 end
 
+-- BUGBUG
+-- need to do error checking
+function Stack.nth(self, n)
+	if n < 0 then return nil end
+
+	local last = self.last
+	local idx = last - n
+	if idx < self.first then return nil, 'beyond end of stack' end
+	
+	return self[last]
+end
 
 
 

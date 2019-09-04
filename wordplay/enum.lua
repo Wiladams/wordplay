@@ -3,14 +3,9 @@
 -- dictionary.  Make this the metatable whenever
 -- you need such functionality.
 local enum = {}
-setmetatable(enum, {
-    __call = function(self, ...)
-        return self:create(...)
-    end,
-})
-
 local enum_mt = {
     __index = function(tbl, value)
+        --print("enum.__index: ", value)
         for key, code in pairs(tbl) do
             if code == value then 
                 return key;
@@ -20,6 +15,16 @@ local enum_mt = {
         return false;
     end;
 }
+
+setmetatable(enum, {
+    __call = function(self, alist)
+        local alist = alist or {}
+        setmetatable(alist, enum_mt)
+        return alist
+    end,
+})
+
+--[[
 function enum.init(self, alist)
     setmetatable(alist, enum_mt)
 
@@ -30,5 +35,6 @@ function enum.create(self, alist)
     local alist = alist or {}
     return self:init(alist);
 end
+--]]
 
 return enum

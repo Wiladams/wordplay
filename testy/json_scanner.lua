@@ -19,14 +19,13 @@ local Token = json_common.Token;
 local TokenType = json_common.TokenType;
 local STATES = json_common.STATES;
 
-local function createSet(...)
-    local n = select('#',...)
+local function createSet(str)
+    local bytes = {string.byte(str,1,#str)}
     local res = {}
-    for i = 1, n do
-        local arg = select(i, ...)
-        local byte = string.byte(arg)
-        res[byte] = true
+    for i=1,#str do
+        res[bytes[i]] = true
     end
+
     return res
 end
 
@@ -45,7 +44,7 @@ for k, v in pairs(escape_char_map) do
     escape_char_map_inv[v] = k
 end
 
-local escapeChars = createSet('/','\\','"','b','f','n','r','t','u')
+local escapeChars = createSet('/\\"bfnrtu')
 
 
 local function iswhitespace(c)
