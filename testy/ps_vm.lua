@@ -61,20 +61,7 @@ function PSVM.push(self, value)
     return true
 end
 
---[[
-local function pop(vm)
-    vm:pop()
-    return true
-end
-exports.pop = pop
---]]
-function PSVM.pop(self)
-    return self.OperandStack:pop()
-end
 
-function PSVM.top(self)
-    return self.OperandStack:top()
-end
 
 -- Dictionary management
 function PSVM.currentdict(self)

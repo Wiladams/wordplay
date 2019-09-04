@@ -27,6 +27,20 @@ exports.exch = exch
 
 
 
+
+
+local function pop(self)
+    return self.OperandStack:pop()
+end
+exports.pop = pop
+
+
+
+local function top(self)
+    return self.OperandStack:top()
+end
+exports.top = top
+
 local function pstack(vm)
     for _, item in vm.OperandStack:items() do 
         print(item)
