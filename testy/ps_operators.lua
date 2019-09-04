@@ -1,5 +1,7 @@
 local bit = require("bit")
 local band, bor = bit.band, bit.bor
+local bnot, bxor = bit.bnot, bit.bxor
+
 local DEGREES, RADIANS = math.deg, math.rad
 local exports = {}
 exports.MARK = "MARK"
@@ -7,77 +9,86 @@ exports.MARK = "MARK"
 --[[
 -- Stack operators
 --]]
-local function dup(stk)
-    stk:push(stk:top())
+local function dup(vm)
+    vm:push(vm.OperandStack:top())
     return true
 end
 exports.dup = dup
 
-local function exch(stk)
-    local a = stk:pop()
-    local b = stk:pop()
-    stk:push(a)
-    stk:push(b)
+local function exch(vm)
+    local a = vm:pop()
+    local b = vm:pop()
+    vm:push(a)
+    vm:push(b)
+
     return true
 end
 exports.exch = exch
 
-local function pop(stk)
-    stk:pop()
-    return true
+
+
+local function pstack(vm)
+    for _, item in vm.OperandStack:items() do 
+        print(item)
+    end
 end
-exports.pop = pop
+exports.pstack = pstack
 
-
-local function copy(stk, n)
+--[[
+-- BUGBUG
+-- depends on what's atop the stack
+local function copy(vm)
     -- create temporary stack
     local tmp = stack()
 
     -- get the n items into temp stack
+    local n = vm:pop()
     for i=0,n-1 do 
-        tmp:push(stk:nth(i))
+        tmp:push(vm.OperandStack:nth(i))
     end
 
     -- push from temp stack back onto stk
     for i=0,n-1 do 
-        stk:push(tmp:pop())
+        vm:push(tmp:pop())
     end
 
     return true
 end
 exports.copy = copy
+--]]
 
-local function roll(stk)
+
+local function roll(vm)
 end
 
-local function index(stk)
-    local n = stk:pop();
-    return stk:nth(n)
+local function index(vm)
+    local n = vm:pop();
+    return vm.OperandStack:nth(n)
 end
 
 
-local function mark(stk)
-    stk:push(exports.MARK)
+local function mark(vm)
+    vm:push(exports.MARK)
     return true;
 end
 exports.mark = mark
 
-local function clear(stk)
-    stk:clear()
+local function clear(vm)
+    vm.OperandStack:clear()
     return true;
 end
 exports.clear = clear
 
-local function count(stk)
-    stk:push(stk:len())
+local function count(vm)
+    vm:push(vm.OperandStack:len())
     return true
 end
 exports.count = count
 
 --counttomark
-local function cleartomark(stk)
-    while stk:len() > 0 do 
-        local item = stk:pop()
+local function cleartomark(vm)
+    while vm.OperandStack:length() > 0 do 
+        local item = vm:pop()
         if item == exports.MARK then
             break
         end
@@ -91,137 +102,165 @@ exports.cleartomark = cleartomark
 -- Arithmetic and Mathematical Operators
 -- two arguments, result on stack
 --]]
-local function add(stk)
-    stk:push(stk:pop()+stk:pop())
+local function add(vm)
+    vm:push(vm:pop()+vm:pop())
     return true
 end
 exports.add = add
 
-local function sub(stk)
-    local num2 = stk:pop()
-    local num1 = stk:pop()
-    stk:push(num1-num2)
+local function sub(vm)
+    local num2 = vm:pop()
+    local num1 = vm:pop()
+    vm:push(num1-num2)
     
     return true
 end
 exports.sub = sub
 
-local function mul(stk)
-    stk:push(stk:pop()*stk:pop())
+local function mul(vm)
+    vm:push(vm:pop()*vm:pop())
 end
 exports.mul = mul
 
-local function div(stk)
-    local num2 = stk:pop()
-    local num1 = stk:pop()
-    stk:push(num1/num2)
+local function div(vm)
+    local num2 = vm:pop()
+    local num1 = vm:pop()
+    vm:push(num1/num2)
     
     return true
 end
 exports.div = div
 
-local function idiv(stk)
-    local num2 = stk:pop()
-    local num1 = stk:pop()
-    stk:push(floor(num1/num2))
+local function idiv(vm)
+    local b = vm:pop()
+    local a = vm:pop()
+
+    local q = a/b
+    if q >=0 then
+        vm:push(math.floor(q))
+    else
+        vm:push(math.ceil(q))
+    end
     
     return true
 end
 exports.idiv = idiv
 
-local function mod(stk)
+local function mod(vm)
+    local b = vm:pop()
+    local a = vm:pop()
+    vm:push(a%b)
+
+    return true
 end
 exports.mod = mod
 
 --[[
 -- one argument
 --]]
-local function abs(stk)
-    stk:push(math.abs(stk:pop()))
+local function abs(vm)
+    vm:push(math.abs(vm:pop()))
     return true
 end
+exports.abs = abs
 
-local function neg(stk)
-    stk:push(-(stk:pop()))
+local function ceiling(vm)
+    vm:push(math.ceil(vm:pop()))
     return true
 end
+exports.ceiling = ceiling
 
-local function ceiling(stk)
-    stk:push(math.ceil(stk:pop()))
+local function floor(vm)
+    vm:push(math.floor(vm:pop()))
     return true
 end
+exports.floor = floor
 
-local function floor(stk)
-    stk:push(math.floor(stk:pop()))
+local function neg(vm)
+    vm:push(-(vm:pop()))
     return true
 end
+exports.neg = neg
 
-local function round(stk)
-    local n = stk:pop()
+
+
+local function round(vm)
+    local n = vm:pop()
     if n >= 0 then
-        stk:push(math.floor(n+0.5))
+        vm:push(math.floor(n+0.5))
     else
-        stk:push(math.ceil(n-0.5))
+        vm:push(math.ceil(n-0.5))
     end
 end
+exports.round = round
 
 --truncate
 
-local function sqrt(stk)
-    stk:push(math.floor(stk:pop()))
+local function sqrt(vm)
+    vm:push(math.floor(vm:pop()))
     return true
 end
+exports.sqrt = sqrt
 
-local function exp(stk)
-    stk:push(math.floor(stk:pop()))
-    return true
-end
-
-local function ln(stk)
-    stk:push(math.floor(stk:pop()))
-    return true
-end
-
-local function log(stk)
-    stk:push(math.log(stk:pop()))
-    return true
-end
-
-local function sin(stk)
-    stk:push(math.sin(RADIANS(stk:pop())))
-    return true
-end
-
-local function cos(stk)
-    stk:push(math.cos(RADIANS(stk:pop())))
-    return true
-end
-
-local function atan(stk)
-    local den = stk:pop()
-    local num = stk:pop()
-    stk:push(DEGREES(math.atan(num/den)))
+-- BUGBUG
+local function exp(vm)
+    local b = vm:pop()
+    local a = vm:pop()
+    vm:push(math.pow(a,b))
 
     return true
 end
+exports.exp = exp
+
+local function ln(vm)
+    vm:push(math.floor(vm:pop()))
+    return true
+end
+
+local function log(vm)
+    vm:push(math.log(vm:pop()))
+    return true
+end
+
+local function sin(vm)
+    vm:push(math.sin(RADIANS(vm:pop())))
+    return true
+end
+exports.sin = sin
+
+local function cos(vm)
+    vm:push(math.cos(RADIANS(vm:pop())))
+    return true
+end
+exports.cos = cos
+
+local function atan(vm)
+    local den = vm:pop()
+    local num = vm:pop()
+    vm:push(DEGREES(math.atan(num/den)))
+
+    return true
+end
+exports.atan = atan
 
 -- put random integer on the stack
-local function rand(stk)
-    stk:push(math.random())
+local function rand(vm)
+    vm:push(math.random())
     return true
 end
+exports.rand = rand
 
-local function srand(stk)
-    local seed = stk:pop()
+local function srand(vm)
+    local seed = vm:pop()
     --math.randomseed(seed)
 
     return true
 end
 
 -- put random number seed on stack
-local function rrand(stk)
+local function rrand(vm)
     local seed = math.randomseed()
-    stk:push(seed)
+    vm:push(seed)
 
     return true
 end
@@ -229,32 +268,44 @@ end
 
 --[[
 -- Array, Packed Array, Dictionary, and String Operators
-get
-put
-copy
-length
-forall
-getinterval
-putinterval
 --]]
+--get
+
+-- dict key value put -
+local function put(vm)
+    local value = vm:pop()
+    local key = vm:pop()
+    local dict = vm:pop()
+    rawset(dict, key, value)
+    
+    return true
+end
+exports.put = put
+
+--copy
+--length
+--forall
+--getinterval
+--putinterval
+
 
 -- creation of composite objects
-local function array(stk)
-    stk:push({})
+local function array(vm)
+    vm:push({})
     return true
 end
 
-local function packedarray(stk)
+local function packedarray(vm)
 end
 
-local function dict(stk)
-    local capacity = stk:pop()
-    stk:push({})
-    return self
+local function dict(vm)
+    local capacity = vm:pop()
+    vm:push({})
+    return true
 end
 exports.dict = dict
 
-local function string(stk)
+local function string(vm)
 end
 exports.string = string
 
@@ -267,62 +318,86 @@ setpacking
 currentpacking
 
 -- dictionaries
-begin
+begin -- in VM
+end     -- in VM
+def     -- in VM
+store   -- in VM
+load    -- in VM
+where   -- in VM
+countdictstack  -- in VM
+cleardictstack  -- in VM
+dictstack       -- in VM
+--]]
+-- known
+-- dict key known bool
+local function known(vm)
+    local key = vm:pop()
+    local dict = vm:pop()
+    if dict[key] ~= nil then
+        vm:push(true)
+    else
+        vm:push(false)
+    end
+
+    return true
 end
-def
-store
-load
-where
-countdictstack
-cleardictstack
-dictstack
-known
-maxlength
-undef
+
+--maxlength
+
+--undef
+-- dict key undef -
+local function undef(vm)
+    local key = vm:pop()
+    local dict = vm:pop()
+    dict[key] = nil;
+
+    return true;
+end
+
 -- <<key1,value1, key2,value2...>>
-]]
+
 
 --[[
 -- String Operators
 --]]
-local function eq(stk)
-    stk:push(stk:pop() == stk:pop())
+local function eq(vm)
+    vm:push(vm:pop() == vm:pop())
     return true
 end
 
-local function ne(stk)
-    stk:push(stk:pop() ~= stk:pop())
+local function ne(vm)
+    vm:push(vm:pop() ~= vm:pop())
     return true
 end
 
-local function gt(stk)
-    local any2 = stk:pop()
-    local any1 = stk:pop()
-    stk:push(any1 > any2)
-
-    return true
-end
-
-local function ge(stk)
-    local any2 = stk:pop()
-    local any1 = stk:pop()
-    stk:push(any1 >= any2)
+local function gt(vm)
+    local any2 = vm:pop()
+    local any1 = vm:pop()
+    vm:push(any1 > any2)
 
     return true
 end
 
-local function lt(stk)
-    local any2 = stk:pop()
-    local any1 = stk:pop()
-    stk:push(any1 < any2)
+local function ge(vm)
+    local any2 = vm:pop()
+    local any1 = vm:pop()
+    vm:push(any1 >= any2)
 
     return true
 end
 
-local function le(stk)
-    local any2 = stk:pop()
-    local any1 = stk:pop()
-    stk:push(any1 <= any2)
+local function lt(vm)
+    local any2 = vm:pop()
+    local any1 = vm:pop()
+    vm:push(any1 < any2)
+
+    return true
+end
+
+local function le(vm)
+    local any2 = vm:pop()
+    local any1 = vm:pop()
+    vm:push(any1 <= any2)
 
     return true
 end
@@ -331,77 +406,77 @@ end
 -- for both boolean and bitwise
 --]]
 
-exports["and"] = function(stk)
-    local any2 = stk:pop()
-    local any1 = stk:pop()
+exports["and"] = function(vm)
+    local any2 = vm:pop()
+    local any1 = vm:pop()
 
     if type(any1 == "boolean") then
-        stk:push(any1 and any2)
+        vm:push(any1 and any2)
     else
-        stk:push(band(any1, any2))
+        vm:push(band(any1, any2))
     end
     return true
 end
 
-exports["or"] = function(stk)
-    local any2 = stk:pop()
-    local any1 = stk:pop()
+exports["or"] = function(vm)
+    local any2 = vm:pop()
+    local any1 = vm:pop()
 
     if type(any1 == "boolean") then
-        stk:push(any1 or any2)
+        vm:push(any1 or any2)
     else
-        stk:push(bor(any1, any2))
+        vm:push(bor(any1, any2))
     end
     return true
 end
 
-local function xor(stk)
-    local any2 = stk:pop()
-    local any1 = stk:pop()
+local function xor(vm)
+    local any2 = vm:pop()
+    local any1 = vm:pop()
 
     if type(any1 == "boolean") then
-        stk:push(any1 and any2)
+        vm:push(any1 and any2)
     else
-        stk:push(band(any1, any2))
+        vm:push(band(any1, any2))
     end
     return true
 end
 
-exports["true"] = function(stk)
-    stk:push(true)
+exports["true"] = function(vm)
+    vm:push(true)
     return true
 end
 
-exports["false"] = function(stk)
-    stk:push(false)
+exports["false"] = function(vm)
+    vm:push(false)
     return true
 end
 
-exports["not"] = function(stk)
-    local any2 = stk:pop()
-    local any1 = stk:pop()
-
-    if type(any1 == "boolean") then
-        stk:push(any1 and any2)
+exports["not"] = function(vm)
+    local a = vm:pop()
+    if type(a) == "boolean" then
+        vm:push(not a)
     else
-        stk:push(band(any1, any2))
+        vm:push(bnot(a))
     end
+
     return true
 end
 
-local function bitshift(stk)
-    local shift = stk:pop()
-    local int1 = stk:pop()
+
+local function bitshift(vm)
+    local shift = vm:pop()
+    local int1 = vm:pop()
 
     if shift < 0 then
-        stk:push(rshift(int1,math.abs(shift)))
+        vm:push(rshift(int1,math.abs(shift)))
     else
-        stk:push(lshift(int1,shift))
+        vm:push(lshift(int1,shift))
     end
 
     return true
 end
-
+exports.bitshift = bitshift
 
 --[[
 -- Control Operators
@@ -431,27 +506,33 @@ executeonly
 noaccess
 --]]
 
-local function cvi(stk)
-    stk:push(tonumber(stk:pop()))
+local function cvi(vm)
+    vm:push(tonumber(vm:pop()))
     return true
 end
 
-local function cvr(stk)
-    stk:push(tonumber(stk:pop()))
+local function cvr(vm)
+    vm:push(tonumber(vm:pop()))
     return true
 end
 
-local function cvn(stk)
+local function cvn(vm)
 end
 
-local function cvs(stk)
-    stk:push(tostring(stk:pop()))
+local function cvs(vm)
+    vm:push(tostring(vm:pop()))
     return true 
 end
 
-local function cvrs(stk)
+local function cvrs(vm)
 end
 
-
+-- miscellaneous
+local function revision(vm)
+    vm.OperandStack:push(1)
+    
+    return true
+end
+exports.revision = revision
 
 return exports

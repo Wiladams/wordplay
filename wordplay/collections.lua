@@ -149,7 +149,7 @@ local Stack_mt = {
 }
 
 function Stack.new(self, obj)
-	obj = obj or {first=0, last=-1}
+	obj = obj or {first=1, last=0}
 
 	setmetatable(obj, Stack_mt);
 
@@ -160,16 +160,10 @@ function Stack.length(self)
 	return self.last - self.first+1
 end
 
-function Stack.reset(self)
-	self.first = 0;
-	self.last = -1;
-
-	return self
-end
 
 -- pop all the items off the stack
 function Stack.clear(self)
-	local n = self:len()
+	local n = self:length()
 	for i=1,n do 
 		self:pop()
 	end
@@ -177,7 +171,7 @@ function Stack.clear(self)
 	return self
 end
 
-function Stack.push(self, item)
+function Stack.push(self, value)
 	local last = self.last + 1
 	self.last = last
 	self[last] = value
@@ -220,7 +214,18 @@ function Stack.nth(self, n)
 	return self[last]
 end
 
+-- iterate the stack items non-destructively
+function Stack.items(self)
+	local function gen(param, state)
+		if param.first > state then
+			return nil;
+		end
 
+		return state-1, param.data[state]
+	end
+
+	return gen, {first = self.first, data=self}, self.last
+end
 
 return {
 	Bag = Bag;

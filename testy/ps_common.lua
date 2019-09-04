@@ -63,6 +63,7 @@ end
 
 return {
     NULL = "null";
+    MARK = "mark";
     Token = Token;
     TokenType = TokenType;
 }
