@@ -45,12 +45,15 @@ function PSVM.new(self, ...)
         OperandStack = stack();
         ExecutionStack = stack();
         DictionaryStack = DictionaryStack();
+
         GraphicsStack = stack();
+        ClippingPathStack = stack();
     }
     setmetatable(obj, PSVM_mt)
 
-    obj.DictionaryStack:pushDictionary(ops)   -- systemdict, should contain system operators
-    obj.DictionaryStack:pushDictionary({})    -- userdict
+    obj.DictionaryStack:pushDictionary(ops)     -- systemdict, should contain system operators
+    obj.DictionaryStack:pushDictionary({})      -- globaldict
+    obj.DictionaryStack:pushDictionary({})      -- userdict
 
     return obj
 end
@@ -61,6 +64,10 @@ function PSVM.push(self, value)
     return true
 end
 
+function PSVM.pushStringLiteral(self, value)
+    self.OperandStack:push(value)
+    return true
+end
 
 
 -- Dictionary management

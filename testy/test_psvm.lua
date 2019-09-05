@@ -61,6 +61,19 @@ local function test_stack()
     vm:pstack()
 end
 
+local function test_procedure()
+    vm:pushStringLiteral("average")
+    vm:beginProcedure()
+    vm:pushOperator('add')
+    vm:push(2)
+    vm:pushOperator('div')
+    vm:endProcedure()
+    vm:def()
+    vm:push(40)
+    vm:push(60)
+    vm:push("average")
+end
+
 --test_aliasing()
 --test_dict()
 --test_currentdict()
